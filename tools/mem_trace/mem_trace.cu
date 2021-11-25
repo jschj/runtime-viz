@@ -47,6 +47,7 @@
 #include "common.h"
 
 #include "meminf_data.h"
+#include "malloc_trace.h"
 
 #define HEX(x)                                                            \
     "0x" << std::setfill('0') << std::setw(16) << std::hex << (uint64_t)x \
@@ -268,11 +269,21 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
 			for (auto x : meminfs) {
 				std::cout << x.first << " +" << x.second.size << ": " << x.second.desc << std::endl;
 			}
-			std::cout << "Press return key to continue";
-			std::cin.get();
-			std::cout << std::endl;
+			//std::cout << "Press return key to continue";
+			//std::cin.get();
+			//std::cout << std::endl;
+        }
+    } else if (meminf::is_malloc_call(cbid) && !is_exit) {
+        std::cout << "GOT MALLOC CALL! " << cbid << std::endl;
+
+        meminf::device_buffer buf(cbid, params);
+
+        if (buf.allocation_type == meminf::device_buffer::allocation_type::cuMemAlloc_v2) {
+            std::cout << "allocate " << buf.allocation_parameters.cuMemAlloc_v2.bytesize << " bytes" << std::endl;
         }
     }
+
+
     skip_callback_flag = false;
     pthread_mutex_unlock(&mutex);
 }
@@ -319,7 +330,7 @@ void* recv_thread_fun(void* args) {
                     ss << HEX(ma->addrs[i]) << " ";
                 }
 
-                printf("MEMTRACE: %s\n", ss.str().c_str());
+                //printf("MEMTRACE: %s\n", ss.str().c_str());
                 num_processed_bytes += sizeof(mem_access_t);
             }
         }

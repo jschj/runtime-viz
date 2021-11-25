@@ -53,6 +53,7 @@ extern "C" __device__ __noinline__ void instrument_mem(int pred, int opcode_id,
 
     /* collect memory address information from other threads */
     for (int i = 0; i < 32; i++) {
+        // T __shfl_sync(unsigned mask, T var, int srcLane, int width=warpSize);
         ma.addrs[i] = __shfl_sync(active_mask, addr, i);
     }
 

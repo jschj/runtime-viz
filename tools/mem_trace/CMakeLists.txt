@@ -15,5 +15,5 @@ set_property(TARGET mem_trace PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_source_files_properties(inject_funcs.cu PROPERTIES COMPILE_FLAGS " -maxrregcount=24 -Xptxas -astoolspatch --keep-device-functions -arch=sm_35")
 
 target_link_libraries(mem_trace_inject_funcs NVBit)
-target_link_libraries(mem_trace NVBit cuda $<TARGET_OBJECTS:mem_trace_inject_funcs> $<TARGET_OBJECTS:meminf_impl>)
+target_link_libraries(mem_trace NVBit cuda $<TARGET_OBJECTS:mem_trace_inject_funcs> $<TARGET_OBJECTS:meminf_impl> $<TARGET_OBJECTS:malloc_trace>)
 target_include_directories(mem_trace PRIVATE $<TARGET_PROPERTY:meminf_impl,INCLUDE_DIRECTORIES>)
