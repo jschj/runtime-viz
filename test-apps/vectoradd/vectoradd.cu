@@ -57,6 +57,10 @@ int main(int argc, char *argv[]) {
     cudaMalloc(&d_b, bytes);
     cudaMalloc(&d_c, bytes);
 
+    printf("vecadd d_a location: %p\n", d_a);
+    printf("vecadd d_b location: %p\n", d_b);
+    printf("vecadd d_c location: %p\n", d_c);
+
 	meminf_describe(d_a, 0);
 	meminf_describe(d_b, 1);
 	meminf_describe(d_c, 2);

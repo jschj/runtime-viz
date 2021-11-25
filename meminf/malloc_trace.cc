@@ -55,6 +55,8 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
         case API_CUDA_cuMemAlloc_v2:
             allocation_parameters.cuMemAlloc_v2 = *reinterpret_cast<cuMemAlloc_v2_params *>(params);
             allocation_type = allocation_type::cuMemAlloc_v2;
+            location = reinterpret_cast<void *>(*allocation_parameters.cuMemAlloc_v2.dptr);
+            buf_size = allocation_parameters.cuMemAlloc_v2.bytesize;
             break;
         case API_CUDA_cuMemAllocPitch_v2:
             allocation_parameters.cuMemAllocPitch_v2 = *reinterpret_cast<cuMemAllocPitch_v2_params *>(params);

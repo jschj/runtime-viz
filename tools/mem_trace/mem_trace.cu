@@ -273,13 +273,17 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
 			//std::cin.get();
 			//std::cout << std::endl;
         }
-    } else if (meminf::is_malloc_call(cbid) && !is_exit) {
+    } else if (meminf::is_malloc_call(cbid) && is_exit) {
+        // CALL THIS AFTER THE FUNCTION WAS CALLED! (is_exit == true)
         std::cout << "GOT MALLOC CALL! " << cbid << std::endl;
 
         meminf::device_buffer buf(cbid, params);
 
         if (buf.allocation_type == meminf::device_buffer::allocation_type::cuMemAlloc_v2) {
-            std::cout << "allocate " << buf.allocation_parameters.cuMemAlloc_v2.bytesize << " bytes" << std::endl;
+            //std::cout << "allocate " << buf.allocation_parameters.cuMemAlloc_v2.bytesize << " bytes" << std::endl;
+            std::cout <<
+                "LOCATION: " << buf.location << '\n' <<
+                "SIZE: " << buf.buf_size << std::endl;
         }
     }
 
