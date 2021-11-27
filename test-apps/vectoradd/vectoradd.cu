@@ -61,6 +61,10 @@ int main(int argc, char *argv[]) {
     printf("vecadd d_b location: %p\n", d_b);
     printf("vecadd d_c location: %p\n", d_c);
 
+    //TRACK_BUFFER(d_a, "Vector A");
+    //TRACK_BUFFER(d_a, "Vector B");
+    //TRACK_BUFFER(d_a, "Vector C");
+
 	meminf_describe(d_a, 0);
 	meminf_describe(d_b, 1);
 	meminf_describe(d_c, 2);

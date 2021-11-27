@@ -62,8 +62,6 @@ struct device_buffer
     device_buffer(nvbit_api_cuda_t cbid, void *params) noexcept(false);
 };
 
-void generate_device_buffer_from_call(nvbit_api_cuda_t cbid, void *params);
-
 class device_buffer_tracker
 {
 private:
@@ -71,10 +69,19 @@ private:
     mutable std::mutex mut;
     std::unordered_map<void *, device_buffer> global_device_buffers;
 public:
-
+    // on malloc()
+    void track(nvbit_api_cuda_t cbid, void *params) noexcept(false);
+    // on free()
+    void untrack(void *location);
+    // user decides to track a previously allocated buffer
+    void user_track_buffer(void *location, const std::string& name);
 };
 
 
-
+// API interface for user
+bool user_track_buffer(void *location, const std::string& name);
 
 } // namespace meminf
+
+// some convenient aliases
+void TRACK_BUFFER(void *location, const std::string& name);

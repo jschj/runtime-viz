@@ -88,4 +88,20 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
 }
 
 
+void device_buffer_tracker::track(nvbit_api_cuda_t cbid, void *params)
+{
+    device_buffer buf(cbid, params);
+    global_device_buffers.insert(std::unordered_map<void *, device_buffer>::value_type(buf.location, buf));
+}
+
+void device_buffer_tracker::untrack(void *location)
+{
+    global_device_buffers.erase(location);
+}
+
 } // namespace meminf
+
+void TRACK_BUFFER(void *location, const std::string& name)
+{
+    meminf::user_track_buffer(location, name);
+}

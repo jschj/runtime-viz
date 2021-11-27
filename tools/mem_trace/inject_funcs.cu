@@ -64,6 +64,7 @@ extern "C" __device__ __noinline__ void instrument_mem(int pred, int opcode_id,
     ma.cta_id_z = cta.z;
     ma.warp_id = get_warpid();
     ma.opcode_id = opcode_id;
+    ma.when = clock();
 
     /* first active lane pushes information on the channel */
     if (first_laneid == laneid) {

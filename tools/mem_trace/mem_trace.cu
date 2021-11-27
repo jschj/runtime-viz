@@ -308,6 +308,8 @@ void* recv_thread_fun(void* args) {
     while (!done) {
         /* receive buffer from channel */
         uint32_t num_recv_bytes = ch_host->recv(recv_buffer, CHANNEL_SIZE);
+        printf("got %d bytes\n", num_recv_bytes);
+
         if (num_recv_bytes > 0) {
             uint32_t num_processed_bytes = 0;
             while (num_processed_bytes < num_recv_bytes) {
@@ -331,8 +333,10 @@ void* recv_thread_fun(void* args) {
                    << " - ";
 
                 for (int i = 0; i < 32; i++) {
-                    ss << HEX(ma->addrs[i]) << " ";
+                    //ss << HEX(ma->addrs[i]) << " ";
                 }
+
+                ss << "when: " << ma->when;
 
                 //printf("MEMTRACE: %s\n", ss.str().c_str());
                 num_processed_bytes += sizeof(mem_access_t);
