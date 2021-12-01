@@ -1,7 +1,7 @@
-#include "malloc_trace.h"
+#include "malloc_track.h"
 
 
-namespace meminf {
+namespace memtrack {
 
 bool is_malloc_call(nvbit_api_cuda_t cbid)
 {
@@ -39,6 +39,30 @@ bool is_free_call(nvbit_api_cuda_t cbid)
         cbid == API_CUDA_cuGraphAddMemFreeNode ||
         cbid == API_CUDA_cuGraphMemFreeNodeGetParams
     );
+}
+
+void *get_free_address(nvbit_api_cuda_t cbid, void *params)
+{
+    uint64_t free_address = 0;
+
+    switch (cbid) {
+        case API_CUDA_cuMemFree:
+            free_address = reinterpret_cast<cuMemFree_params *>(params)->dptr;
+            break;
+        case API_CUDA_cuMemFree_v2:
+            free_address = reinterpret_cast<cuMemFree_v2_params *>(params)->dptr;
+            break;
+        case API_CUDA_cuMemFreeAsync:
+            free_address = reinterpret_cast<cuMemFreeAsync_params *>(params)->dptr;
+            break;
+        case API_CUDA_cuMemFreeAsync_ptsz:
+            free_address = reinterpret_cast<cuMemFreeAsync_ptsz_params *>(params)->dptr;
+            break;
+        default:
+            throw std::runtime_error("Unsupported nvbit_api_cuda_t value for free!");
+    }
+
+    return reinterpret_cast<void *>(free_address);
 }
 
 device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
@@ -88,20 +112,73 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
 }
 
 
-void device_buffer_tracker::track(nvbit_api_cuda_t cbid, void *params)
+void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
 {
     device_buffer buf(cbid, params);
-    global_device_buffers.insert(std::unordered_map<void *, device_buffer>::value_type(buf.location, buf));
+    std::unique_lock<std::mutex> lk(mut);
+    active_buffers.emplace(buf.location, buf);
 }
 
-void device_buffer_tracker::untrack(void *location)
+void device_buffer_tracker::on_free(void *location)
 {
-    global_device_buffers.erase(location);
+    std::unique_lock<std::mutex> lk(mut);
+
+    auto idx = active_buffers.find(location);
+
+    if (idx == active_buffers.end())
+        throw std::runtime_error("No such buffer is currently tracked!");
+
+    // user cares about this buffer, memorize it after free
+    if (!idx->second.name_tag.empty())
+        inactive_buffers.emplace(idx->second.location, idx->second);
+
+    active_buffers.erase(idx);
 }
 
-} // namespace meminf
-
-void TRACK_BUFFER(void *location, const std::string& name)
+void device_buffer_tracker::on_free(nvbit_api_cuda_t cbid, void *params)
 {
-    meminf::user_track_buffer(location, name);
+    on_free(get_free_address(cbid, params));
+}
+
+void device_buffer_tracker::user_track_buffer(void *location, const std::string& name)
+{
+    std::unique_lock<std::mutex> lk(mut);
+    // throws error if no such buffer exists
+    active_buffers.at(location).name_tag = name;
+}
+
+std::string device_buffer_tracker::get_info_string() const
+{
+    std::stringstream ss;
+    ss << std::hex;
+
+    for (const auto& it : inactive_buffers) {
+        uintptr_t from = reinterpret_cast<uintptr_t>(it.second.location);
+        uintptr_t to = from + it.second.buf_size;
+
+        ss << "0x" << from << " - " << "0x" << to << " -> " << it.second.name_tag << '\n';
+    }
+
+    return ss.str();
+}
+
+static device_buffer_tracker instance;
+
+device_buffer_tracker& tracker()
+{
+    return instance;
+}
+
+} // namespace memtrack
+
+// implement user API
+void TRACK_BUFFER(void *location, const char *name)
+{
+    try {
+        memtrack::tracker().user_track_buffer(location, name);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n'
+            << "Hint: Was NVbit previously attached via the LD_PRELOAD trick?" << std::endl;
+        throw e;
+    }
 }

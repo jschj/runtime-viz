@@ -4,4 +4,4 @@ enable_language(CUDA)
 
 add_executable(vectoradd vectoradd.cu)
 
-target_link_libraries(vectoradd meminf)
+target_link_libraries(vectoradd meminf memtrack)

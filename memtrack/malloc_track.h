@@ -8,12 +8,13 @@
 #include <nvbit.h>
 
 
-namespace meminf
+namespace memtrack
 {
 
 // exported utility functions
 bool is_malloc_call(nvbit_api_cuda_t cbid);
 bool is_free_call(nvbit_api_cuda_t cbid);
+void *get_free_address(nvbit_api_cuda_t cbid, void *params);
 
 /*
     API_CUDA_cuMemAlloc ||
@@ -65,23 +66,23 @@ struct device_buffer
 class device_buffer_tracker
 {
 private:
-    // cuda API might be called by multiple threads
+    // cuda API might be called by multiple threads, protect maps
     mutable std::mutex mut;
-    std::unordered_map<void *, device_buffer> global_device_buffers;
+
+    std::unordered_map<void *, device_buffer> active_buffers;
+    std::unordered_multimap<void *, device_buffer> inactive_buffers;
 public:
     // on malloc()
-    void track(nvbit_api_cuda_t cbid, void *params) noexcept(false);
+    void on_malloc(nvbit_api_cuda_t cbid, void *params);
     // on free()
-    void untrack(void *location);
+    void on_free(void *location);
+    void on_free(nvbit_api_cuda_t cbid, void *params);
     // user decides to track a previously allocated buffer
     void user_track_buffer(void *location, const std::string& name);
+
+    std::string get_info_string() const;
 };
 
+device_buffer_tracker& tracker();
 
-// API interface for user
-bool user_track_buffer(void *location, const std::string& name);
-
-} // namespace meminf
-
-// some convenient aliases
-void TRACK_BUFFER(void *location, const std::string& name);
+} // namespace memtrack
