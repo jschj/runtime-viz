@@ -48,6 +48,8 @@
 
 #include "meminf_data.h"
 #include "malloc_track.h"
+//#include "digest.h"
+//#include "json.h"
 
 #define HEX(x)                                                            \
     "0x" << std::setfill('0') << std::setw(16) << std::hex << (uint64_t)x \

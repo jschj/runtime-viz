@@ -21,9 +21,21 @@ target_link_libraries(mem_trace
     $<TARGET_OBJECTS:mem_trace_inject_funcs>
     $<TARGET_OBJECTS:meminf_impl>
     $<TARGET_OBJECTS:memtrack>
+    #$<TARGET_OBJECTS:digest>
 )
 
 target_include_directories(mem_trace PRIVATE
     $<TARGET_PROPERTY:meminf_impl,INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:memtrack,INCLUDE_DIRECTORIES>
+    #$<TARGET_PROPERTY:digest,INCLUDE_DIRECTORIES>
 )
+
+#set_property(TARGET mem_trace PROPERTY CXX_STANDARD 20)
+
+#target_compile_options(mem_trace PRIVATE -Werror -Wall -Wextra)
+
+#get_target_property(_inc jsoncons INTERFACE_INCLUDE_DIRECTORIES)
+#target_include_directories(jsoncons SYSTEM INTERFACE $<TARGET_PROPERTY:jsoncons,INTERFACE_INCLUDE_DIRECTORIES>)
+
+# load global config
+#include (${CMAKE_SOURCE_DIR} ../../../build/cmake/config.cmake)
