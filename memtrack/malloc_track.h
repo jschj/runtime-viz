@@ -7,6 +7,8 @@
 
 #include <nvbit.h>
 
+#include "util.h"
+
 
 namespace memtrack
 {
@@ -31,6 +33,10 @@ struct device_buffer
 {
     size_t buf_size;
     void *location;
+
+    util::time_point malloc_time;
+    // can be changed afterwards
+    util::time_point free_time;
 
     // can be given by user
     std::string name_tag;
@@ -81,6 +87,9 @@ public:
     void user_track_buffer(void *location, const std::string& name);
 
     std::string get_info_string() const;
+
+    std::unordered_multimap<void *, device_buffer>::const_iterator begin() const noexcept { return inactive_buffers.cbegin(); }
+    std::unordered_multimap<void *, device_buffer>::const_iterator end() const noexcept { return inactive_buffers.cend(); }
 };
 
 device_buffer_tracker& tracker();

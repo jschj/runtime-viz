@@ -29,6 +29,9 @@ namespace memtrack
         bson::bson_stream_encoder encoder;
     public:
         streaming_bson_encoder(const std::string& file_name);
+
+        bson::bson_stream_encoder& get_encoder() { return encoder; }
+
         void begin();
         void add_access(const mem_access_t& access);
         void end();

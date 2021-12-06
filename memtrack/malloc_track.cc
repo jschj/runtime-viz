@@ -67,6 +67,8 @@ void *get_free_address(nvbit_api_cuda_t cbid, void *params)
 
 device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
 {
+    malloc_time = util::now();
+
     switch (cbid) {
         case API_CUDA_cuMemAlloc:
             allocation_parameters.cuMemAlloc = *reinterpret_cast<cuMemAlloc_params *>(params);
@@ -121,12 +123,16 @@ void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
 
 void device_buffer_tracker::on_free(void *location)
 {
+    util::time_point now = util::now();
+
     std::unique_lock<std::mutex> lk(mut);
 
     auto idx = active_buffers.find(location);
 
     if (idx == active_buffers.end())
         throw std::runtime_error("No such buffer is currently tracked!");
+
+    //idx->second.free_time = now;
 
     // user cares about this buffer, memorize it after free
     if (!idx->second.name_tag.empty())

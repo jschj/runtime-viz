@@ -4,6 +4,7 @@ add_library(memtrack SHARED
     malloc_track.cc
     json.cc
     cu_memtrack.cc
+    util.cc
 )
 
 # need CUDA headers

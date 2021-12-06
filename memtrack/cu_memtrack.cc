@@ -37,7 +37,43 @@ namespace memtrack
 
     void cu_memtrack_end()
     {
-        bson_encoder->end();
+        //bson_encoder->end();
+
+        
+        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
+
+        enc.key("buffers");
+        enc.begin_array();
+
+        /*
+        uint32_t buffer_id = 0;
+
+        for (const auto& entry_pair : tracker()) {
+            enc.begin_object();
+            
+            enc.key("bufferId");
+            enc.uint64_value(buffer_id++);
+
+            enc.key("bufferType");
+            enc.string_value("plain");
+
+            enc.key("name");
+            enc.string_value(entry_pair.second.name_tag);
+
+            enc.key("height");
+            enc.uint64_value(entry_pair.second.buf_size);
+
+            enc.end_object();
+        }
+         */
+
+        enc.end_array();
+        enc.flush();
+         
+
+        //bson_encoder->end();
+
+        bson_encoder.release();
     }
 
 }

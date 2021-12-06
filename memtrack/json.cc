@@ -13,7 +13,8 @@ namespace memtrack
         out_file(file_name, std::ios::binary),
         encoder(out_file)
     {
-
+        if (!out_file.is_open())
+            throw std::runtime_error("Could not open JSON dump file!");
     }
 
     void streaming_bson_encoder::begin()
@@ -30,7 +31,7 @@ namespace memtrack
     void streaming_bson_encoder::end()
     {
         encoder.end_array();
-        encoder.flush();
+        //encoder.flush();
     }
 
     void streaming_bson_encoder::end(const jsoncons::json& j, const std::string& field_name)

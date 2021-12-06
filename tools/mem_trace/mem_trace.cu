@@ -105,10 +105,14 @@ void nvbit_at_init() {
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&mutex, &attr);
+
+    memtrack::cu_memtrack_init("vecadd.bson");
+    //memtrack::cu_memtrack_begin();
 }
 
 void nvbit_at_term() {
-    std::cout << memtrack::tracker().get_info_string() << std::endl;
+    memtrack::cu_memtrack_end();
+    //std::cout << memtrack::tracker().get_info_string() << std::endl;
 }
 
 /* Set used to avoid re-instrumenting the same functions multiple times */
@@ -282,12 +286,15 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
     } else if (memtrack::is_malloc_call(cbid) && is_exit) {
         // CALL THIS AFTER THE FUNCTION WAS CALLED! (is_exit == true)
         std::cout << "GOT MALLOC CALL! " << cbid << std::endl;
+        //memtrack::tracker().on_malloc(cbid, params);
 
-        memtrack::tracker().on_malloc(cbid, params);
+        //cudaDeviceSynchronize();
+        memtrack::cu_memtrack_malloc(cbid, params);
     } else if (memtrack::is_free_call(cbid) && is_exit) {
         std::cout << "GOT FREE CALL! " << cbid << std::endl;
+        //memtrack::tracker().on_free(cbid, params);
 
-        memtrack::tracker().on_free(cbid, params);
+        memtrack::cu_memtrack_free(cbid, params);
     }
 
 
