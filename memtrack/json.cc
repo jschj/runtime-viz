@@ -19,8 +19,8 @@ namespace memtrack
 
     void streaming_bson_encoder::begin()
     {
-        encoder.key("accesses");
-        encoder.begin_array();
+        //encoder.key("accesses");
+        //encoder.begin_array();
     }
 
     void streaming_bson_encoder::add_access(const mem_access_t& access)

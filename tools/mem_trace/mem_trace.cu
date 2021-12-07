@@ -107,7 +107,7 @@ void nvbit_at_init() {
     pthread_mutex_init(&mutex, &attr);
 
     memtrack::cu_memtrack_init("vecadd.bson");
-    //memtrack::cu_memtrack_begin();
+    memtrack::cu_memtrack_begin();
 }
 
 void nvbit_at_term() {
@@ -347,6 +347,8 @@ void* recv_thread_fun(void* args) {
                 }
 
                 ss << "when: " << ma->when;
+
+                memtrack::cu_memtrack_access(*ma);
 
                 //printf("MEMTRACE: %s\n", ss.str().c_str());
                 num_processed_bytes += sizeof(mem_access_t);

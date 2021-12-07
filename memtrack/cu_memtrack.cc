@@ -17,7 +17,15 @@ namespace memtrack
 
     void cu_memtrack_begin()
     {
+        std::cout << "beginning bson" << std::endl;
         bson_encoder->begin();
+        std::cout << "done" << std::endl;
+        bson_encoder->get_encoder().begin_object();
+        std::cout << "done" << std::endl;
+        bson_encoder->get_encoder().key("accesses");
+        std::cout << "done" << std::endl;
+        bson_encoder->get_encoder().begin_array();
+        std::cout << "done" << std::endl;
     }
 
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params)
@@ -32,14 +40,32 @@ namespace memtrack
 
     void cu_memtrack_access(const mem_access_t& access)
     {
+        uint32_t ids[32];
+        // TODO: This might change in the future!
+        util::time_point when{
+            std::chrono::duration_cast<util::time_point::duration>(std::chrono::nanoseconds(access.when))
+        };
+        tracker().find_associated_buffer_ids(when, access.addrs, ids);
 
+        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
+
+        for (uint32_t i = 0; i < 32; ++i) {
+            enc.begin_object();
+            enc.key("t");
+            enc.uint64_value(access.when);
+            enc.key("id");
+            enc.uint64_value(ids[i]);
+            enc.key("addr");
+            enc.uint64_value(access.addrs[i]);
+            enc.end_object();
+        }
     }
 
     void cu_memtrack_end()
     {
         jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
 
-        enc.begin_object();
+        enc.end_array();
         enc.key("buffers");
 
         enc.begin_array();
