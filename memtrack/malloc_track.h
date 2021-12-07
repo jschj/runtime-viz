@@ -35,7 +35,14 @@ struct device_buffer_range
 
     bool operator <(const device_buffer_range& other) const noexcept
     {
-        // lexicographic ordering
+        // special case to==0, this can be used to find a buffer by address in a multimap
+        if (other.to == 0) {
+            // is the address in range?
+            return from < other.from && other.from < to;
+        }
+
+        // ordering like normal numbers
+        // the relative ordering of ranges is equivalent to the ordering of memory addresses!
         return from < other.from ||
             (to < other.to && from == other.from);
     }
@@ -80,6 +87,12 @@ struct device_buffer
 
     device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id) noexcept(false);
     void *location() const noexcept { return reinterpret_cast<void *>(range.from); }
+
+    bool was_active_at(util::time_point when) const noexcept
+    {
+        return malloc_time <= when &&
+            (free_time == util::time_zero() ? true : when <= free_time);            
+    }
 };
 
 class device_buffer_tracker
@@ -112,7 +125,7 @@ public:
 
     std::string get_info_string() const;
 
-    void find_associated_buffer_ids(util::time_point when, const uint32_t addresses[32], uint32_t ids[32]) const;
+    void find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const;
 
     // make iterable with foreach
     decltype(user_buffers)::const_iterator begin() const noexcept { return user_buffers.cbegin(); }

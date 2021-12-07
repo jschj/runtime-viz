@@ -176,14 +176,22 @@ std::string device_buffer_tracker::get_info_string() const
     throw std::runtime_error("Not implemented!");
 }
 
-void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, const uint32_t addresses[32], uint32_t ids[32]) const
+void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const
 {
     // when tells us the point time when this memory access happened
     // by now the associated buffer can very well be freed again
 
-    // search active buffers first
-    for (const auto& it : active_buffers) {
+    for (uint32_t i = 0; i < 32; ++i) {
+        device_buffer_range search_range(addresses[i], 0);
+        auto range = user_buffers.equal_range(search_range);
 
+        for (auto it = range.first; it != range.second; it++) {
+            // this should have exactly one match
+            if (it->second.was_active_at(when)) {
+                ids[i] = it->second.id;
+                continue;
+            }
+        }
     }
 }
 
