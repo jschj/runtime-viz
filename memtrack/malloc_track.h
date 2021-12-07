@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
+#include <map>
 
 #include <nvbit.h>
 
@@ -19,26 +20,35 @@ bool is_malloc_call(nvbit_api_cuda_t cbid);
 bool is_free_call(nvbit_api_cuda_t cbid);
 void *get_free_address(nvbit_api_cuda_t cbid, void *params);
 
-/*
-    API_CUDA_cuMemAlloc ||
-    API_CUDA_cuMemAllocPitch ||
-    API_CUDA_cuMemAlloc_v2 ||
-    API_CUDA_cuMemAllocPitch_v2 ||
-    API_CUDA_cuMemAllocManaged ||
-    API_CUDA_cuMemAllocAsync ||
-    API_CUDA_cuMemAllocAsync_ptsz ||
-    API_CUDA_cuMemAllocFromPoolAsync ||
-    API_CUDA_cuMemAllocFromPoolAsync_ptsz
- */
+typedef uint64_t cuda_address_t;
+
+struct device_buffer_range
+{
+    cuda_address_t from;
+    cuda_address_t to;
+
+    device_buffer_range() {}
+    device_buffer_range(cuda_address_t lo, cuda_address_t hi): from(lo), to(hi) {}
+
+    bool in_range(cuda_address_t addr) const noexcept { return from <= addr && addr < to; }
+    uint64_t size() const noexcept { return to - from; }
+
+    bool operator <(const device_buffer_range& other) const noexcept
+    {
+        // lexicographic ordering
+        return from < other.from ||
+            (to < other.to && from == other.from);
+    }
+};
+
 struct device_buffer
 {
-    size_t buf_size;
-    void *location;
+    device_buffer_range range;
     uint32_t id;
 
     util::time_point malloc_time;
     // can be changed afterwards
-    util::time_point free_time;
+    util::time_point free_time = util::time_zero();
 
     // can be given by user
     std::string name_tag;
@@ -69,6 +79,7 @@ struct device_buffer
     } allocation_type;
 
     device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id) noexcept(false);
+    void *location() const noexcept { return reinterpret_cast<void *>(range.from); }
 };
 
 class device_buffer_tracker
@@ -77,8 +88,15 @@ private:
     // cuda API might be called by multiple threads, protect maps
     mutable std::mutex mut;
 
+    // currently active buffers (not necessarily tracked by user)
     std::unordered_map<void *, device_buffer> active_buffers;
-    std::unordered_multimap<void *, device_buffer> inactive_buffers;
+    // user tracked buffers:
+    // They aren't touched by on_malloc() and on_free() but must be easily
+    // searchable by a given address (if it is in range). That's why the
+    // key is an address range rather than a single pointer. For this
+    // reason we use map as it uses a sorted tree under the hood which
+    // is good for ranges.
+    std::multimap<device_buffer_range, device_buffer> user_buffers;
 
     uint32_t next_buffer_id = 0;
     std::unordered_set<std::string> assigned_names;
@@ -88,13 +106,17 @@ public:
     // on free()
     void on_free(void *location);
     void on_free(nvbit_api_cuda_t cbid, void *params);
+
     // user decides to track a previously allocated buffer
     void user_track_buffer(void *location, const std::string& name);
 
     std::string get_info_string() const;
 
-    std::unordered_multimap<void *, device_buffer>::const_iterator begin() const noexcept { return inactive_buffers.cbegin(); }
-    std::unordered_multimap<void *, device_buffer>::const_iterator end() const noexcept { return inactive_buffers.cend(); }
+    void find_associated_buffer_ids(util::time_point when, const uint32_t addresses[32], uint32_t ids[32]) const;
+
+    // make iterable with foreach
+    decltype(user_buffers)::const_iterator begin() const noexcept { return user_buffers.cbegin(); }
+    decltype(user_buffers)::const_iterator end() const noexcept { return user_buffers.cend(); }
 };
 
 device_buffer_tracker& tracker();

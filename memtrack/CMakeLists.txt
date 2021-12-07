@@ -7,6 +7,8 @@ add_library(memtrack SHARED
     util.cc
 )
 
+target_compile_features(memtrack PRIVATE cxx_std_17)
+
 # need CUDA headers
 target_include_directories(memtrack PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../core

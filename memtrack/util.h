@@ -9,6 +9,8 @@ namespace memtrack::util
     typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 
     time_point now();
+    // can effectively never happen
+    time_point time_zero();
 
     /*
     class low_overhead_clock

@@ -82,8 +82,11 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffe
         case API_CUDA_cuMemAlloc_v2:
             allocation_parameters.cuMemAlloc_v2 = *reinterpret_cast<cuMemAlloc_v2_params *>(params);
             allocation_type = allocation_type::cuMemAlloc_v2;
-            location = reinterpret_cast<void *>(*allocation_parameters.cuMemAlloc_v2.dptr);
-            buf_size = allocation_parameters.cuMemAlloc_v2.bytesize;
+            {
+                cuda_address_t location = static_cast<cuda_address_t>(*allocation_parameters.cuMemAlloc_v2.dptr);
+                cuda_address_t buf_size = allocation_parameters.cuMemAlloc_v2.bytesize;
+                range = device_buffer_range(location, location + buf_size);
+            }
             break;
         case API_CUDA_cuMemAllocPitch_v2:
             allocation_parameters.cuMemAllocPitch_v2 = *reinterpret_cast<cuMemAllocPitch_v2_params *>(params);
@@ -119,7 +122,7 @@ void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
 {
     device_buffer buf(cbid, params, next_buffer_id++);
     std::unique_lock<std::mutex> lk(mut);
-    active_buffers.emplace(buf.location, buf);
+    active_buffers.emplace(reinterpret_cast<void *>(buf.range.from), buf);
 }
 
 void device_buffer_tracker::on_free(void *location)
@@ -133,11 +136,12 @@ void device_buffer_tracker::on_free(void *location)
     if (idx == active_buffers.end())
         throw std::runtime_error("No such buffer is currently tracked!");
 
-    //idx->second.free_time = now;
 
-    // user cares about this buffer, memorize it after free
-    if (!idx->second.name_tag.empty())
-        inactive_buffers.emplace(idx->second.location, idx->second);
+    auto range = user_buffers.equal_range(idx->second.range);
+
+    for (auto it = range.first; it != range.second; it++)
+        if (it->second.id == idx->second.id)
+            it->second.free_time = now;
 
     active_buffers.erase(idx);
 }
@@ -156,23 +160,31 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
         throw std::runtime_error("Buffer names must be unique accross all buffers in the program!");
 
     assigned_names.insert(name);
-    // throws error if no such buffer exists
-    active_buffers.at(location).name_tag = name;
+    
+    // find active buffer and copy it to the tracked buffers
+    auto idx = active_buffers.find(location);
+
+    if (idx == active_buffers.end())
+        throw std::runtime_error("No such buffer is currently tracked!");
+
+    idx->second.name_tag = name;
+    user_buffers.emplace(idx->second.range, idx->second);
 }
 
 std::string device_buffer_tracker::get_info_string() const
 {
-    std::stringstream ss;
-    ss << std::hex;
+    throw std::runtime_error("Not implemented!");
+}
 
-    for (const auto& it : inactive_buffers) {
-        uintptr_t from = reinterpret_cast<uintptr_t>(it.second.location);
-        uintptr_t to = from + it.second.buf_size;
+void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, const uint32_t addresses[32], uint32_t ids[32]) const
+{
+    // when tells us the point time when this memory access happened
+    // by now the associated buffer can very well be freed again
 
-        ss << "0x" << from << " - " << "0x" << to << " -> " << it.second.name_tag << '\n';
+    // search active buffers first
+    for (const auto& it : active_buffers) {
+
     }
-
-    return ss.str();
 }
 
 static device_buffer_tracker instance;

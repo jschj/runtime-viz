@@ -7,4 +7,9 @@ namespace memtrack::util
     {
         return std::chrono::high_resolution_clock::now();
     }
+
+    time_point time_zero()
+    {
+        return time_point();
+    }
 } // namespace memtrack::util

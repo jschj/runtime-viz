@@ -57,7 +57,7 @@ namespace memtrack
             enc.string_value(entry_pair.second.name_tag);
 
             enc.key("height");
-            enc.uint64_value(entry_pair.second.buf_size);
+            enc.uint64_value(entry_pair.second.range.size());
 
             enc.end_object();
         }
