@@ -1,0 +1,40 @@
+{
+  "buffers": [
+    {
+      "id": 0,
+      "type": "plain",
+      "name": "test buffer (plain)",
+      "height": 10
+    },
+    {
+      "id": 1,
+      "type": "pitched",
+      "name": "test buffer (pitched)",
+      "height": 10,
+      "width": 10,
+      "pitch": 10
+    }
+  ],
+  "accesses": [
+    {
+      "time": 0,
+      "bufferid": 0,
+      "index": 0
+    },
+    {
+      "time": 1,
+      "bufferid": 0,
+      "index": 1
+    },
+    {
+      "time": 2,
+      "bufferid": 0,
+      "index": 9
+    },
+    {
+      "time": 100,
+      "bufferid": 1,
+      "index": 25
+    }
+  ]
+}
