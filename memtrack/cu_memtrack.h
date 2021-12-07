@@ -8,6 +8,8 @@
 
 #include <nvbit.h>
 
+#include <tools/mem_trace/common.h>
+
 
 namespace memtrack
 {
@@ -20,6 +22,6 @@ namespace memtrack
     void cu_memtrack_begin();
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params);
     void cu_memtrack_free(nvbit_api_cuda_t cbid, void *params);
-    void cu_memtrack_access();
+    void cu_memtrack_access(const mem_access_t& access);
     void cu_memtrack_end();
 }

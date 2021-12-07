@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <mutex>
 
 #include <nvbit.h>
@@ -33,6 +34,7 @@ struct device_buffer
 {
     size_t buf_size;
     void *location;
+    uint32_t id;
 
     util::time_point malloc_time;
     // can be changed afterwards
@@ -66,7 +68,7 @@ struct device_buffer
         cuMemAllocFromPoolAsync_ptsz
     } allocation_type;
 
-    device_buffer(nvbit_api_cuda_t cbid, void *params) noexcept(false);
+    device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id) noexcept(false);
 };
 
 class device_buffer_tracker
@@ -77,6 +79,9 @@ private:
 
     std::unordered_map<void *, device_buffer> active_buffers;
     std::unordered_multimap<void *, device_buffer> inactive_buffers;
+
+    uint32_t next_buffer_id = 0;
+    std::unordered_set<std::string> assigned_names;
 public:
     // on malloc()
     void on_malloc(nvbit_api_cuda_t cbid, void *params);

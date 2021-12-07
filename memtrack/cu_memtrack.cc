@@ -30,16 +30,13 @@ namespace memtrack
         tracker().on_free(cbid, params);
     }
 
-    void cu_memtrack_access()
+    void cu_memtrack_access(const mem_access_t& access)
     {
 
     }
 
     void cu_memtrack_end()
     {
-        //bson_encoder->end();
-
-        
         jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
 
         enc.begin_object();
@@ -47,13 +44,11 @@ namespace memtrack
 
         enc.begin_array();
 
-        uint32_t buffer_id = 0;
-
         for (const auto& entry_pair : tracker()) {
             enc.begin_object();
             
             enc.key("bufferId");
-            enc.uint64_value(buffer_id++);
+            enc.uint64_value(entry_pair.second.id);
 
             enc.key("bufferType");
             enc.string_value("plain");
@@ -69,7 +64,7 @@ namespace memtrack
 
         enc.end_array();
 
-        bson_encoder->encoder.end_object();
+        enc.end_object();
         enc.flush();
 
         bson_encoder.reset();

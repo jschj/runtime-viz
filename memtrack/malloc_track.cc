@@ -65,9 +65,10 @@ void *get_free_address(nvbit_api_cuda_t cbid, void *params)
     return reinterpret_cast<void *>(free_address);
 }
 
-device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
+device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id)
 {
     malloc_time = util::now();
+    id = buffer_id;
 
     switch (cbid) {
         case API_CUDA_cuMemAlloc:
@@ -116,7 +117,7 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params)
 
 void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
 {
-    device_buffer buf(cbid, params);
+    device_buffer buf(cbid, params, next_buffer_id++);
     std::unique_lock<std::mutex> lk(mut);
     active_buffers.emplace(buf.location, buf);
 }
@@ -149,6 +150,12 @@ void device_buffer_tracker::on_free(nvbit_api_cuda_t cbid, void *params)
 void device_buffer_tracker::user_track_buffer(void *location, const std::string& name)
 {
     std::unique_lock<std::mutex> lk(mut);
+    
+    // names must be unique
+    if (assigned_names.find(name) != assigned_names.end())
+        throw std::runtime_error("Buffer names must be unique accross all buffers in the program!");
+
+    assigned_names.insert(name);
     // throws error if no such buffer exists
     active_buffers.at(location).name_tag = name;
 }
