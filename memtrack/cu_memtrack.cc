@@ -42,10 +42,11 @@ namespace memtrack
         
         jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
 
+        enc.begin_object();
         enc.key("buffers");
+
         enc.begin_array();
 
-        /*
         uint32_t buffer_id = 0;
 
         for (const auto& entry_pair : tracker()) {
@@ -65,15 +66,13 @@ namespace memtrack
 
             enc.end_object();
         }
-         */
 
         enc.end_array();
+
+        bson_encoder->encoder.end_object();
         enc.flush();
-         
 
-        //bson_encoder->end();
-
-        bson_encoder.release();
+        bson_encoder.reset();
     }
 
 }
