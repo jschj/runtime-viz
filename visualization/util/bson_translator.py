@@ -3,8 +3,6 @@ import bson
 
 
 def tranlate_json_to_bson(inputfilepath, outputfilepath):
-    content = {}
-
     with open(inputfilepath, 'r') as inputfile:
         content = json.load(inputfile)
 
@@ -15,7 +13,6 @@ def tranlate_json_to_bson(inputfilepath, outputfilepath):
 
 
 def dump_bson(inputfilepath):
-    content = {}
     with open(inputfilepath, 'rb') as inputfile:
         binary = inputfile.read()
         content = bson.loads(binary)
