@@ -1,2 +1,4 @@
 holoviews ~= 1.14.6
 bson
+numpy
+matplotlib
