@@ -1,21 +1,37 @@
-import numpy as np
-import holoviews as hv
-from holoviews import opts
-hv.extension('bokeh')
+import matplotlib.pyplot as plt
+from matplotlib.widgets import RangeSlider
+
+import input
+import preprocessing
+from heatmap import Heatmap
 
 if __name__ == '__main__':
-    print('Hello world')
+    buffers = input.read_input("testinput/test02.json")
+    pre = preprocessing.Preprocessing(buffers)
 
-    def random_dataset(x, y):
-        return hv.Dataset((range(x), range(y), np.random.rand(x, y)), ['x', 'y'], 'test')
+    start_time, end_time = pre.get_time_range()
+    if end_time <= start_time:
+        end_time = start_time + 1
+    timestep_size = max((end_time - start_time) // 100, 1)
+    timestep_count = (end_time - start_time) // timestep_size
 
+    fig, axs = plt.subplots(2, 2)
+    plt.subplots_adjust(bottom=0.25)
 
-    dictonary = {hour: hv.Image(random_dataset(10, 10), ['x', 'y']) for hour in range(10)}
-    dictonary2 = {hour: hv.Image(random_dataset(10, 10), ['x', 'y']) for hour in range(10)}
-    print(dictonary)
-    holomap = hv.HoloMap(dictonary, kdims='Hour')
-    holomap2 = hv.HoloMap(dictonary, kdims='Hour')
-    layout = holomap + holomap2
+    hm = Heatmap(buffers[0], (start_time, end_time), axs[0][0])
 
-    # show(hv.render(holomap))
-    hv.renderer('bokeh').save(layout, 'out', fmt='widgets')
+    # Create the RangeSlider
+    slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
+    slider = RangeSlider(slider_ax, "Range",
+                         valmin=start_time,
+                         valmax=end_time,
+                         valstep=timestep_size,
+                         valinit=(start_time, end_time))
+
+    def update(val):
+        hm.update(timerange=val)
+        # Redraw the figure to ensure it updates
+        fig.canvas.draw_idle()
+
+    slider.on_changed(update)
+    plt.show()

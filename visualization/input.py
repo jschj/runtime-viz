@@ -1,10 +1,10 @@
 import bson
 import json
 
-from buffer import AbstractBuffer, Buffer1D, Buffer2D
+import buffer
 
 
-def read_input(inputfilepath: str) -> dict[int, AbstractBuffer]:
+def read_input(inputfilepath: str) -> buffer.BufferCollection:
     buffers = {}
 
     # read input file
@@ -25,13 +25,13 @@ def read_input(inputfilepath: str) -> dict[int, AbstractBuffer]:
         buffertype = bufferdetails["type"]
 
         if buffertype == "plain":
-            buffer = Buffer1D(bufferdetails)
+            b = buffer.Buffer1D(bufferdetails)
         elif buffertype == "pitched":
-            buffer = Buffer2D(bufferdetails)
+            b = buffer.Buffer2D(bufferdetails)
         else:
             raise "Invalid buffer type!"
 
-        buffers[identifier] = buffer
+        buffers[identifier] = b
 
     for accessdetails in content["accesses"]:
         bufferid = accessdetails["bufferid"]
@@ -41,7 +41,7 @@ def read_input(inputfilepath: str) -> dict[int, AbstractBuffer]:
         else:
             raise "Found a memory access for a buffer which does not exist!"
 
-    for _, buffer in buffers.items():
-        buffer.sanity_checks()
+    for _, b in buffers.items():
+        b.sanity_checks()
 
     return buffers

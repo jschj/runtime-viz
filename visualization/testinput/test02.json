@@ -1,0 +1,64 @@
+{
+  "buffers": [
+    {
+      "id": 0,
+      "type": "pitched",
+      "name": "test buffer (pitched)",
+      "height": 10,
+      "width": 10,
+      "pitch": 10
+    }
+  ],
+  "accesses": [
+    {
+      "time": 10,
+      "bufferid": 0,
+      "index": 25
+    },
+    {
+      "time": 20,
+      "bufferid": 0,
+      "index": 26
+    },
+    {
+      "time": 30,
+      "bufferid": 0,
+      "index": 27
+    },
+    {
+      "time": 40,
+      "bufferid": 0,
+      "index": 28
+    },
+    {
+      "time": 50,
+      "bufferid": 0,
+      "index": 29
+    },
+    {
+      "time": 60,
+      "bufferid": 0,
+      "index": 25
+    },
+    {
+      "time": 70,
+      "bufferid": 0,
+      "index": 26
+    },
+    {
+      "time": 80,
+      "bufferid": 0,
+      "index": 27
+    },
+    {
+      "time": 90,
+      "bufferid": 0,
+      "index": 28
+    },
+    {
+      "time": 100,
+      "bufferid": 0,
+      "index": 29
+    }
+  ]
+}

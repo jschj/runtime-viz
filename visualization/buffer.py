@@ -1,5 +1,11 @@
+import functools
+
+import numpy as np
+
+
 class AbstractBuffer:
     """ Abstract representation of a buffer """
+
     def __init__(self, details: dict):
         """ Initialize buffer using detail information from BSON """
         self.name = details["name"]
@@ -10,6 +16,12 @@ class AbstractBuffer:
 
     def sanity_checks(self):
         pass
+
+    def generate_heatmap(self, timerange):
+        pass
+
+
+BufferCollection = dict[int, AbstractBuffer]
 
 
 class Buffer1D(AbstractBuffer):
@@ -62,3 +74,17 @@ class Buffer2D(AbstractBuffer):
             assert 0 <= access.x < self.width
             assert 0 <= access.y < self.height
             assert 0 <= access.time
+
+    # @functools.lru_cache(maxsize=100)
+    def generate_heatmap(self, timerange):
+        start_time, end_time = timerange
+
+        shape = (self.height, self.width)
+
+        img = np.zeros(shape=shape)
+
+        for access in self.accesses:
+            if start_time <= access.time <= end_time:
+                img[access.y][access.x] = img[access.y][access.x] + 1
+
+        return img
