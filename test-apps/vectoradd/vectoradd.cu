@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "meminf.h"
 #include "memtrack.h"
 
@@ -63,8 +64,8 @@ int main(int argc, char *argv[]) {
     printf("vecadd d_c location: %p\n", d_c);
 
     TRACK_BUFFER(d_a, "Vector A");
-    //TRACK_BUFFER(d_b, "Vector B");
-    //TRACK_BUFFER(d_c, "Vector C");
+    TRACK_BUFFER(d_b, "Vector B");
+    TRACK_BUFFER(d_c, "Vector C");
 
 	meminf_describe(d_a, 0);
 	meminf_describe(d_b, 1);
@@ -93,6 +94,9 @@ int main(int argc, char *argv[]) {
 
     // Execute the kernel
     CUDA_SAFECALL((vecAdd<<<gridSize, blockSize>>>(d_a, d_b, d_c, n)));
+    //sleep(10);
+    //cudaStreamSynchronize(0);
+
 
     // Copy array back to host
     cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);

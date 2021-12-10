@@ -182,17 +182,79 @@ void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, co
     // by now the associated buffer can very well be freed again
 
     for (uint32_t i = 0; i < 32; ++i) {
-        device_buffer_range search_range(addresses[i], 0);
+        device_buffer_range search_range(addresses[i]);
         auto range = user_buffers.equal_range(search_range);
+
+        if (range.first == range.second) {
+            goto error;
+        }
 
         for (auto it = range.first; it != range.second; it++) {
             // this should have exactly one match
-            if (it->second.was_active_at(when)) {
+
+            if (it->first.in_range(addresses[i])) {
+                if (!it->second.was_active_at(when)) {
+                    bool a = when >= it->second.malloc_time;
+                    bool b = when.time_since_epoch() >= it->second.malloc_time.time_since_epoch();
+                    bool c = std::chrono::duration_cast<std::chrono::seconds>(when.time_since_epoch()).count() >=
+                        std::chrono::duration_cast<std::chrono::seconds>(it->second.malloc_time.time_since_epoch()).count();
+
+                    assert(a == b);
+                    assert(a == c);
+
+                    std::cout << a << " " << b << " " << c << std::endl;
+                    std::cout << std::chrono::duration_cast<std::chrono::seconds>(it->second.free_time.time_since_epoch()).count() << std::endl;
+
+                    std::cout << "not active: access = " << std::chrono::duration_cast<std::chrono::seconds>(when.time_since_epoch()).count()
+                        << " malloc_time = " << std::chrono::duration_cast<std::chrono::seconds>(it->second.malloc_time.time_since_epoch()).count() << std::endl;
+                }
+
                 ids[i] = it->second.id;
-                continue;
+                //continue;
+                goto next;
             }
         }
+
+error:
+
+        if (range.first == range.second) {
+            std::cout << "WARNING: EMPTY RANGE!\n"
+                << std::hex << "(" << range.first->first.from << ", " << range.first->first.to << ") "
+                << "(" << range.second->first.from << ", " << range.second->first.to << ")\n";
+        }
+
+        // no match found, bad!
+        search_range = device_buffer_range(addresses[i]);
+        std::cout << std::hex << "address: " << addresses[i]
+            << " at " << std::dec << util::time_to_ns(when) << std::endl;
+
+        for (const auto& it : user_buffers) {
+            std::cout << it.first.from << " TO " << it.first.to << ": "
+                << it.second.name_tag << std::endl;
+            std::cout << "cmp: " << (it.first < search_range) << std::endl;
+            std::cout << "active: " << it.second.was_active_at(when) << std::endl;
+            std::cout << std::dec << (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(it.second.malloc_time - util::time_zero()).count() << ' ' << i << std::endl;
+        }
+
+        throw std::runtime_error("No match found for given address and timepoint!");
+
+next:
+        void();
     }
+}
+
+std::string device_buffer_tracker::get_buffer_info_string() const
+{
+    std::stringstream ss;
+
+    for (const auto& it : user_buffers) {
+        ss << it.second.name_tag << '\n'
+            << "range from " << std::hex << it.first.from << " to " << it.first.to << '\n'
+            << "alive from " << std::dec << util::time_to_ns(it.second.malloc_time) << " to "
+            << util::time_to_ns(it.second.free_time) << '\n';
+    }
+
+    return ss.str();
 }
 
 static device_buffer_tracker instance;

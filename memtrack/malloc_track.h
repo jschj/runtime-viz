@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <map>
+#include <limits>
 
 #include <nvbit.h>
 
@@ -29,22 +30,24 @@ struct device_buffer_range
 
     device_buffer_range() {}
     device_buffer_range(cuda_address_t lo, cuda_address_t hi): from(lo), to(hi) {}
+    device_buffer_range(cuda_address_t lo): from(lo), to(lo) {}
 
     bool in_range(cuda_address_t addr) const noexcept { return from <= addr && addr < to; }
     uint64_t size() const noexcept { return to - from; }
 
     bool operator <(const device_buffer_range& other) const noexcept
     {
-        // special case to==0, this can be used to find a buffer by address in a multimap
-        if (other.to == 0) {
-            // is the address in range?
-            return from < other.from && other.from < to;
+        if (other.from == other.to) {
+            // equal iff. in range
+            return !(from <= other.from < to);
         }
 
-        // ordering like normal numbers
-        // the relative ordering of ranges is equivalent to the ordering of memory addresses!
-        return from < other.from ||
-            (to < other.to && from == other.from);
+        return from < other.from;
+    }
+
+    bool operator ==(const device_buffer_range& other) const
+    {
+        throw std::runtime_error("LALA");
     }
 };
 
@@ -126,6 +129,8 @@ public:
     std::string get_info_string() const;
 
     void find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const;
+
+    std::string get_buffer_info_string() const;
 
     // make iterable with foreach
     decltype(user_buffers)::const_iterator begin() const noexcept { return user_buffers.cbegin(); }

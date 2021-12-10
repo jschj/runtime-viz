@@ -12,6 +12,9 @@ namespace memtrack::util
     // can effectively never happen
     time_point time_zero();
 
+    uint64_t time_to_ns(const time_point& t);
+    uint64_t time_to_ns(const time_point& before, const time_point& after);
+
     /*
     class low_overhead_clock
     {

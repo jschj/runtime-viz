@@ -40,6 +40,10 @@ __device__ uint64_t get_global_time()
 {
     uint64_t result;
 
+    // sm30 or higher is required for %globaltimer which is a nanosecond realtime clock.
+    // see https://nvidia.github.io/libcudacxx/standard_api/time_library/chrono.html
+    // and https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer
+
     // see [^1] for contraint letters and %-escaping
     // https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html
     asm (
@@ -53,6 +57,8 @@ extern "C" __device__ __noinline__ void instrument_mem(int pred, int opcode_id,
                                                        uint64_t addr,
                                                        uint64_t grid_launch_id,
                                                        uint64_t pchannel_dev) {
+    uint64_t when = get_global_time();
+    
     /* if thread is predicated off, return */
     if (!pred) {
         return;
@@ -77,14 +83,7 @@ extern "C" __device__ __noinline__ void instrument_mem(int pred, int opcode_id,
     ma.cta_id_z = cta.z;
     ma.warp_id = get_warpid();
     ma.opcode_id = opcode_id;
-    //ma.when = clock64();
-
-    // sm30 or higher is required for %globaltimer which is a nanosecond realtime clock.
-    // see https://nvidia.github.io/libcudacxx/standard_api/time_library/chrono.html
-    // and https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer
-
-    //asm("mov.u64 r1, %globaltimer;");
-    ma.when = get_global_time();
+    ma.when = when;
 
     /* first active lane pushes information on the channel */
     if (first_laneid == laneid) {
