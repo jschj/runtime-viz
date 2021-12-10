@@ -1,5 +1,6 @@
-import bson
 import json
+
+import bson
 
 import buffer
 
