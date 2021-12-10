@@ -11,54 +11,54 @@
   ],
   "accesses": [
     {
-      "time": 10,
-      "bufferid": 0,
-      "index": 25
+      "t": 10,
+      "b": 0,
+      "i": 25
     },
     {
-      "time": 20,
-      "bufferid": 0,
-      "index": 26
+      "t": 20,
+      "b": 0,
+      "i": 26
     },
     {
-      "time": 30,
-      "bufferid": 0,
-      "index": 27
+      "t": 30,
+      "b": 0,
+      "i": 27
     },
     {
-      "time": 40,
-      "bufferid": 0,
-      "index": 28
+      "t": 40,
+      "b": 0,
+      "i": 28
     },
     {
-      "time": 50,
-      "bufferid": 0,
-      "index": 29
+      "t": 50,
+      "b": 0,
+      "i": 29
     },
     {
-      "time": 60,
-      "bufferid": 0,
-      "index": 25
+      "t": 60,
+      "b": 0,
+      "i": 25
     },
     {
-      "time": 70,
-      "bufferid": 0,
-      "index": 26
+      "t": 70,
+      "b": 0,
+      "i": 26
     },
     {
-      "time": 80,
-      "bufferid": 0,
-      "index": 27
+      "t": 80,
+      "b": 0,
+      "i": 27
     },
     {
-      "time": 90,
-      "bufferid": 0,
-      "index": 28
+      "t": 90,
+      "b": 0,
+      "i": 28
     },
     {
-      "time": 100,
-      "bufferid": 0,
-      "index": 29
+      "t": 100,
+      "b": 0,
+      "i": 29
     }
   ]
 }

@@ -10,7 +10,7 @@ from heatmap import Heatmap
 
 if __name__ == '__main__':
     # read input
-    buffers = input.read_input("testinput/test01.json")
+    buffers = input.read_input("testinput/test02.json")
     pre = preprocessing.Preprocessing(buffers)
 
     # calculate basic time values
@@ -63,8 +63,6 @@ if __name__ == '__main__':
         """ Callback function when the slider is moved"""
         for h in heatmaps:
             h.update(val)
-
-        hm.update(timerange=val)
 
         lower_limit_line.set_xdata([val[0], val[0]])
         upper_limit_line.set_xdata([val[1], val[1]])
