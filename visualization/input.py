@@ -35,7 +35,7 @@ def read_input(inputfilepath: str) -> buffer.BufferCollection:
         buffers[identifier] = b
 
     for accessdetails in content["accesses"]:
-        bufferid = accessdetails["bufferid"]
+        bufferid = accessdetails["b"]
 
         if bufferid in buffers:
             buffers[bufferid].add_memory_access(accessdetails)
