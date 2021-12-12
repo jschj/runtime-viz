@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <limits>
+#include <atomic>
 
 #include "json.h"
 
@@ -9,7 +10,7 @@
 namespace memtrack
 {
     std::unique_ptr<streaming_bson_encoder> bson_encoder;
-
+    int64_t device_host_time_difference;
 
 
     void cu_memtrack_init(const std::string& json_dump_file)
@@ -43,11 +44,12 @@ namespace memtrack
     void cu_memtrack_access(const mem_access_t& access)
     {
         uint32_t ids[32];
+        uint64_t indices[32];
         // TODO: This might change in the future!
         util::time_point when{
-            std::chrono::duration_cast<util::time_point::duration>(std::chrono::nanoseconds(access.when))
+            std::chrono::duration_cast<util::time_point::duration>(std::chrono::nanoseconds(access.when - device_host_time_difference))
         };
-        tracker().find_associated_buffer_ids(when, access.addrs, ids);
+        tracker().find_associated_buffers(when, access.addrs, ids, indices);
 
         jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
 
@@ -56,12 +58,12 @@ namespace memtrack
             enc.key("t");
             // hack to circumvent jsoncons moronic bound checking
             //enc.uint64_value(access.when, jsoncons::semantic_tag::epoch_nano);
-            enc.int64_value(static_cast<int64_t>(access.when));
-            enc.key("id");
+            enc.int64_value(static_cast<int64_t>(access.when - device_host_time_difference));
+            enc.key("b");
             enc.uint64_value(ids[i]);
-            enc.key("addr");
+            enc.key("i");
             // TODO: causes error if first bit of address is 1
-            enc.uint64_value(access.addrs[i]);
+            enc.uint64_value(indices[i] / sizeof(float));
             enc.end_object();
         }
     }
@@ -101,4 +103,8 @@ namespace memtrack
         bson_encoder.reset();
     }
 
+    void cu_memtrack_set_time_difference(int64_t delta)
+    {
+        device_host_time_difference = delta;
+    }
 }

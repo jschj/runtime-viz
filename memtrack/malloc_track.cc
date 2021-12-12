@@ -192,27 +192,8 @@ void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, co
         for (auto it = range.first; it != range.second; it++) {
             // this should have exactly one match
 
-            if (it->first.in_range(addresses[i])) {
-                if (!it->second.was_active_at(when)) {
-                    bool a = when >= it->second.malloc_time;
-                    bool b = when.time_since_epoch() >= it->second.malloc_time.time_since_epoch();
-                    bool c = std::chrono::duration_cast<std::chrono::seconds>(when.time_since_epoch()).count() >=
-                        std::chrono::duration_cast<std::chrono::seconds>(it->second.malloc_time.time_since_epoch()).count();
-
-                    assert(a == b);
-                    assert(a == c);
-
-                    /*
-                    std::cout << a << " " << b << " " << c << std::endl;
-                    std::cout << std::chrono::duration_cast<std::chrono::seconds>(it->second.free_time.time_since_epoch()).count() << std::endl;
-
-                    std::cout << "not active: access = " << std::chrono::duration_cast<std::chrono::seconds>(when.time_since_epoch()).count()
-                        << " malloc_time = " << std::chrono::duration_cast<std::chrono::seconds>(it->second.malloc_time.time_since_epoch()).count() << std::endl;
-                     */
-                }
-
+            if (it->first.in_range(addresses[i]) && it->second.was_active_at(when)) {
                 ids[i] = it->second.id;
-                //continue;
                 goto next;
             }
         }
@@ -238,6 +219,35 @@ error:
             std::cout << std::dec << (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(it.second.malloc_time - util::time_zero()).count() << ' ' << i << std::endl;
         }
 
+        throw std::runtime_error("No match found for given address and timepoint!");
+
+next:
+        void();
+    }
+}
+
+void device_buffer_tracker::find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
+        uint32_t ids[32], uint64_t indices[32]) const
+{
+    for (uint32_t i = 0; i < 32; ++i) {
+        device_buffer_range search_range(addresses[i]);
+        auto range = user_buffers.equal_range(search_range);
+
+        if (range.first == range.second) {
+            goto error;
+        }
+
+        for (auto it = range.first; it != range.second; it++) {
+            // this should have exactly one match
+
+            if (it->first.in_range(addresses[i]) && it->second.was_active_at(when)) {
+                ids[i] = it->second.id;
+                indices[i] = addresses[i] - it->first.from;
+                goto next;
+            }
+        }
+
+error:
         throw std::runtime_error("No match found for given address and timepoint!");
 
 next:

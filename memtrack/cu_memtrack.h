@@ -24,4 +24,5 @@ namespace memtrack
     void cu_memtrack_free(nvbit_api_cuda_t cbid, void *params);
     void cu_memtrack_access(const mem_access_t& access);
     void cu_memtrack_end();
+    void cu_memtrack_set_time_difference(int64_t delta);
 }

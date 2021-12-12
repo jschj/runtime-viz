@@ -129,6 +129,8 @@ public:
     std::string get_info_string() const;
 
     void find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const;
+    void find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
+        uint32_t ids[32], uint64_t indices[32]) const;
 
     std::string get_buffer_info_string() const;
 

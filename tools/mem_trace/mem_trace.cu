@@ -281,11 +281,10 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
 			for (auto x : meminfs) {
 				std::cout << x.first << " +" << x.second.size << ": " << x.second.desc << std::endl;
 			}
-			
+
             // probe device time
-            int64_t diff = get_time_difference();
-            printf("probed global time difference: %ld\n", diff / 1000000000L);
-            
+            memtrack::cu_memtrack_set_time_difference(probe_global_time_difference());
+
             //std::cout << "Press return key to continue";
 			//std::cin.get();
 			//std::cout << std::endl;
