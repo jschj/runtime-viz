@@ -9,7 +9,7 @@ project(NVBITMemTrace)
 find_package(NVBit REQUIRED)
 
 add_library(mem_trace_inject_funcs OBJECT inject_funcs.cu)
-add_library(mem_trace MODULE mem_trace.cu)
+add_library(mem_trace MODULE mem_trace.cu device_clock.cu)
 
 set_property(TARGET mem_trace PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_source_files_properties(inject_funcs.cu PROPERTIES COMPILE_FLAGS " -maxrregcount=24 -Xptxas -astoolspatch --keep-device-functions -arch=sm_35")

@@ -202,11 +202,13 @@ void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, co
                     assert(a == b);
                     assert(a == c);
 
+                    /*
                     std::cout << a << " " << b << " " << c << std::endl;
                     std::cout << std::chrono::duration_cast<std::chrono::seconds>(it->second.free_time.time_since_epoch()).count() << std::endl;
 
                     std::cout << "not active: access = " << std::chrono::duration_cast<std::chrono::seconds>(when.time_since_epoch()).count()
                         << " malloc_time = " << std::chrono::duration_cast<std::chrono::seconds>(it->second.malloc_time.time_since_epoch()).count() << std::endl;
+                     */
                 }
 
                 ids[i] = it->second.id;

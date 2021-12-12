@@ -15,7 +15,7 @@ namespace memtrack::util
 
     uint64_t time_to_ns(const time_point& t)
     {
-        return time_to_ns(t, time_zero());
+        return time_to_ns(time_zero(), t);
     }
 
     uint64_t time_to_ns(const time_point& before, const time_point& after)

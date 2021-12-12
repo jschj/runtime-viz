@@ -33,6 +33,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <chrono>
 
 /* every tool needs to include this once */
 #include "nvbit_tool.h"
@@ -50,6 +51,7 @@
 #include "malloc_track.h"
 //#include "digest.h"
 #include "cu_memtrack.h"
+#include "device_clock.h"
 
 #define HEX(x)                                                            \
     "0x" << std::setfill('0') << std::setw(16) << std::hex << (uint64_t)x \
@@ -279,7 +281,12 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
 			for (auto x : meminfs) {
 				std::cout << x.first << " +" << x.second.size << ": " << x.second.desc << std::endl;
 			}
-			//std::cout << "Press return key to continue";
+			
+            // probe device time
+            int64_t diff = get_time_difference();
+            printf("probed global time difference: %ld\n", diff / 1000000000L);
+            
+            //std::cout << "Press return key to continue";
 			//std::cin.get();
 			//std::cout << std::endl;
         }

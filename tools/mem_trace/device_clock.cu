@@ -1,11 +1,9 @@
-#include <stdint.h>
-#include <nvbit.h>
-#include <cuda.h>
+#include "device_clock.h"
 
-#include <memtrack/util.h>
+#include <iostream>
 
 
-__device__ uint64_t get_global_time()
+__device__ uint64_t get_global_timex()
 {
     uint64_t result;
 
@@ -24,17 +22,17 @@ __device__ uint64_t get_global_time()
 
 __global__ void probe_device_clock(uint64_t *global_time)
 {
-    *global_time = get_global_time();
+    *global_time = get_global_timex();
 }
 
-uint64_t get_time_difference()
+int64_t probe_global_time_difference()
 {
     int64_t device_time;
+    uint64_t *buf;
+    
+    cudaMalloc(&buf, sizeof(device_time));
 
-
-    void *buf = cudaMalloc(sizeof(device_time));
-
-    int64_t host_time = util::time_to_ns(util::now());
+    int64_t host_time = memtrack::util::time_to_ns(memtrack::util::now());
     probe_device_clock<<<1, 1>>>(buf);
 
     cudaMemcpy(&device_time, buf, sizeof(device_time), cudaMemcpyDeviceToHost);
