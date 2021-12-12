@@ -88,6 +88,14 @@ struct device_buffer
         cuMemAllocFromPoolAsync_ptsz
     } allocation_type;
 
+    // can be given by user
+    enum element_type {
+        type_float,
+        type_double,
+        type_int32,
+        type_int64
+    } type;
+
     device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id) noexcept(false);
     void *location() const noexcept { return reinterpret_cast<void *>(range.from); }
 
@@ -95,6 +103,32 @@ struct device_buffer
     {
         return malloc_time <= when &&
             (free_time == util::time_zero() ? true : when <= free_time);            
+    }
+
+    size_t get_elem_type_size() const noexcept
+    {
+        switch (type) {
+            case type_float: return sizeof(float);
+            case type_double: return sizeof(double);
+            case type_int32: return sizeof(int32_t);
+            case type_int64: return sizeof(int64_t);
+            default: return sizeof(char);
+        }
+    }
+
+    std::string get_elem_type_name() const
+    {
+        std::stringstream ss;
+
+        switch (type) {
+            case type_float: ss << "t_float"; break;
+            case type_double: ss << "t_double"; break;
+            case type_int32: ss << "t_int32"; break;
+            case type_int64: ss << "t_int64"; break;
+            default: ss << "t_char"; break;
+        }
+
+        return ss.str();
     }
 };
 
@@ -124,7 +158,7 @@ public:
     void on_free(nvbit_api_cuda_t cbid, void *params);
 
     // user decides to track a previously allocated buffer
-    void user_track_buffer(void *location, const std::string& name);
+    void user_track_buffer(void *location, const std::string& name, device_buffer::element_type type);
 
     std::string get_info_string() const;
 

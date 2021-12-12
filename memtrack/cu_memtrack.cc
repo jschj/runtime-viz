@@ -63,7 +63,7 @@ namespace memtrack
             enc.uint64_value(ids[i]);
             enc.key("i");
             // TODO: causes error if first bit of address is 1
-            enc.uint64_value(indices[i] / sizeof(float));
+            enc.uint64_value(indices[i]);
             enc.end_object();
         }
     }
@@ -80,10 +80,10 @@ namespace memtrack
         for (const auto& entry_pair : tracker()) {
             enc.begin_object();
             
-            enc.key("bufferId");
+            enc.key("id");
             enc.uint64_value(entry_pair.second.id);
 
-            enc.key("bufferType");
+            enc.key("type");
             enc.string_value("plain");
 
             enc.key("name");
@@ -91,6 +91,9 @@ namespace memtrack
 
             enc.key("height");
             enc.uint64_value(entry_pair.second.range.size());
+
+            enc.key("type_name");
+            enc.string_value(entry_pair.second.get_elem_type_name());
 
             enc.end_object();
         }

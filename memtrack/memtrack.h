@@ -5,7 +5,5 @@
 
 
 // user API
-extern void TRACK_BUFFER(void *location, const char *name);
-
-//template <class ElemType = float>
-//extern void _TRACK_BUFFER(ElemType *location, const char *name);
+template <class T>
+extern void TRACK_BUFFER(T *location, const char *name);

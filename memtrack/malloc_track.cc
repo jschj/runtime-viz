@@ -1,5 +1,7 @@
 #include "malloc_track.h"
 
+#include "memtrack.h"
+
 
 namespace memtrack {
 
@@ -151,7 +153,7 @@ void device_buffer_tracker::on_free(nvbit_api_cuda_t cbid, void *params)
     on_free(get_free_address(cbid, params));
 }
 
-void device_buffer_tracker::user_track_buffer(void *location, const std::string& name)
+void device_buffer_tracker::user_track_buffer(void *location, const std::string& name, device_buffer::element_type type)
 {
     std::unique_lock<std::mutex> lk(mut);
     
@@ -168,6 +170,7 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
         throw std::runtime_error("No such buffer is currently tracked!");
 
     idx->second.name_tag = name;
+    idx->second.type = type;
     user_buffers.emplace(idx->second.range, idx->second);
 }
 
@@ -242,7 +245,7 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
 
             if (it->first.in_range(addresses[i]) && it->second.was_active_at(when)) {
                 ids[i] = it->second.id;
-                indices[i] = addresses[i] - it->first.from;
+                indices[i] = (addresses[i] - it->first.from) / it->second.get_elem_type_size();
                 goto next;
             }
         }
@@ -276,16 +279,28 @@ device_buffer_tracker& tracker()
     return instance;
 }
 
-} // namespace memtrack
-
-// implement user API
-void TRACK_BUFFER(void *location, const char *name)
+static void track_buffer_types(void *location, const char *name, device_buffer::element_type type)
 {
     try {
-        memtrack::tracker().user_track_buffer(location, name);
+        memtrack::tracker().user_track_buffer(location, name, type);
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n'
             << "Hint: Was NVbit previously attached via the LD_PRELOAD trick?" << std::endl;
         throw e;
     }
+}
+
+} // namespace memtrack
+
+// implement user API
+template <>
+void TRACK_BUFFER<float>(float *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_float);
+}
+
+template <>
+void TRACK_BUFFER<double>(double *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_double);
 }
