@@ -233,6 +233,9 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
         uint32_t ids[32], uint64_t indices[32]) const
 {
     for (uint32_t i = 0; i < 32; ++i) {
+        if (!addresses[i])
+            continue;
+
         device_buffer_range search_range(addresses[i]);
         auto range = user_buffers.equal_range(search_range);
 

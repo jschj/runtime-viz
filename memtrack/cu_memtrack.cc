@@ -54,6 +54,10 @@ namespace memtrack
         jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
 
         for (uint32_t i = 0; i < 32; ++i) {
+            // NULL means no access!    
+            if (!access.addrs[i])
+                continue;            
+
             enc.begin_object();
             enc.key("t");
             // hack to circumvent jsoncons moronic bound checking
