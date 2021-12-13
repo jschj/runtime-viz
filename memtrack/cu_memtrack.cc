@@ -94,7 +94,7 @@ namespace memtrack
             enc.string_value(entry_pair.second.name_tag);
 
             enc.key("height");
-            enc.uint64_value(entry_pair.second.range.size());
+            enc.uint64_value(entry_pair.second.range.size() / entry_pair.second.get_elem_type_size());
 
             enc.key("type_name");
             enc.string_value(entry_pair.second.get_elem_type_name());
