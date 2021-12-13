@@ -1,4 +1,6 @@
 import math
+import sys
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,8 +11,13 @@ from heatmap import Heatmap
 import time_information
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print(f"Usage: {os.path.basename(__file__)} <path to input file (.json or .bson)>")
+        exit(255)
+
+    inputfilepath = sys.argv[1]
     # read input
-    buffers = input.read_input("testinput/test02.json")
+    buffers = input.read_input(inputfilepath)
     ti = time_information.TimeInformation(buffers)
 
     # calculate size of output plots
@@ -20,24 +27,31 @@ if __name__ == '__main__':
     # Create subplots
     fig, axs = plt.subplots(rows, columns)
     fig.canvas.manager.set_window_title("PMPP Memory Access Visualization")
-    plt.subplots_adjust(hspace=0.4, bottom=0.2)
+    plt.subplots_adjust(hspace=0.4, bottom=0.3)
 
     # plot heatmaps for all buffers
     heatmaps = []
     i = 0
+    global_histogram = np.zeros(shape=(ti.timestep_count + 1,))
     for i, (_, b) in enumerate(buffers.items()):
         axis = plt.subplot(rows, columns, i + 1)
         hm = Heatmap(b, ti, axis)
+        global_histogram = global_histogram + hm.get_local_histogram()
         heatmaps.append(hm)
 
     # hide unused plots
+    i = i + 1
     while i < (rows - 1) * columns:
         plt.subplot(rows, columns, i + 1).set_axis_off()
         i = i + 1
 
     # Create overview plot that ranges over all columns
     overview = plt.subplot(rows, 1, rows)
-    plt.plot(np.arange(ti.start_time, ti.end_time, 0.01), np.cos(np.arange(ti.start_time, ti.end_time, 0.01)))  # TODO: dummy plot
+    end = ti.end_time
+    if ti.duration % ti.timestep_size == 0:
+        end = end + ti.timestep_size
+    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), global_histogram)
+    plt.xlim(ti.start_time - ti.duration // 20, ti.end_time + ti.duration // 20)
 
     # Create the RangeSlider
     slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
@@ -54,8 +68,12 @@ if __name__ == '__main__':
 
     def update(val):
         """ Callback function when the slider is moved"""
+        # print(f"Slider moved! New timerange: {val[0]} - {val[1]}")
+
         for h in heatmaps:
             h.update(val)
+
+        # print("Finished calculating new heatmaps.")
 
         lower_limit_line.set_xdata([val[0], val[0]])
         upper_limit_line.set_xdata([val[1], val[1]])
