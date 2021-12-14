@@ -1,14 +1,40 @@
+import math
 from typing import Tuple
 
 import numpy as np
 
 import buffer
 from time_information import TimeInformation
+import primefac
 
-MAX_RES = 100
+
+def _calc_resolution(actual_res, max_res):
+    """
+    Calculates the heatmap resolution (hm_res).
+    Guarantees that: hm_res <= max_res and actual_res % hm_res == 0.
+
+    Problematic edge case: If actual_res is prime, hm_res == 1
+    """
+    if actual_res < max_res:
+        return actual_res
+
+    prime_factors = sorted(primefac.primefac(actual_res))
+    divisor = 1
+    for fac in prime_factors:
+        if actual_res // divisor > max_res:
+            divisor = divisor * fac
+        else:
+            break
+
+    hm_res = actual_res // divisor
+    assert hm_res <= max_res
+    assert actual_res % hm_res == 0
+    return hm_res
 
 
 class Heatmap:
+    MAX_RES = 128
+
     def __init__(self, b: buffer.Buffer, ti: TimeInformation, ax):
         """
         Precalculate and display heatmap
@@ -20,8 +46,9 @@ class Heatmap:
         self.ti = ti
 
         # heatmap dimension
-        hm_width = min(b.width, MAX_RES)
-        hm_height = min(b.height, MAX_RES)
+        hm_width = _calc_resolution(b.width, Heatmap.MAX_RES)
+        hm_height = _calc_resolution(b.height, Heatmap.MAX_RES)
+        # print(f"Using a {hm_height}x{hm_width} heatmap for {b.height}x{b.width} buffer ({b.name}).")
 
         self.histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
@@ -35,8 +62,8 @@ class Heatmap:
 
             for access in b.accesses[tp]:
                 # calculate index in frame
-                x = round((access.x_index / b.width) * hm_width)
-                y = round((access.y_index / b.height) * hm_height)
+                x = math.floor((access.x_index / b.width) * hm_width)
+                y = math.floor((access.y_index / b.height) * hm_height)
 
                 # update heatmap frame
                 self.prefix_sums[frame_index][x][y] = \

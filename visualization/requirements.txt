@@ -1,3 +1,4 @@
 bson
 numpy
 matplotlib
+primefac

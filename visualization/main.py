@@ -4,6 +4,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import ScalarFormatter
 from matplotlib.widgets import RangeSlider
 
 import input
@@ -60,6 +61,7 @@ if __name__ == '__main__':
                          valmax=ti.end_time,
                          valstep=ti.timestep_size,
                          valinit=(ti.start_time, ti.end_time))
+    slider.valtext.set_visible(False)
 
     # Create limit lintes
     lower_limit_line = overview.axvline(slider.val[0], color='k')
