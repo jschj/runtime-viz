@@ -9,12 +9,13 @@ namespace memtrack
     namespace bson = jsoncons::bson; // for brevity
 
 
-    streaming_bson_encoder::streaming_bson_encoder(const std::string& file_name):
+    streaming_bson_encoder::streaming_bson_encoder(const std::string& file_name, const std::string& access_file_name):
         out_file(file_name, std::ios::binary),
-        encoder(out_file)
+        encoder(out_file),
+        acc_file(access_file_name, std::ios::binary)
     {
-        if (!out_file.is_open())
-            throw std::runtime_error("Could not open JSON dump file!");
+        if (!out_file.is_open() || !acc_file.is_open())
+            throw std::runtime_error("Could not open dump files!");
     }
 
     void streaming_bson_encoder::begin()

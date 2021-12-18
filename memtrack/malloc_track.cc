@@ -76,10 +76,21 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffe
         case API_CUDA_cuMemAlloc:
             allocation_parameters.cuMemAlloc = *reinterpret_cast<cuMemAlloc_params *>(params);
             allocation_type = allocation_type::cuMemAlloc;
+            {
+                cuda_address_t location = static_cast<cuda_address_t>(*allocation_parameters.cuMemAlloc.dptr);
+                cuda_address_t buf_size = allocation_parameters.cuMemAlloc.bytesize;
+                range = device_buffer_range(location, location + buf_size);
+            }
             break;
         case API_CUDA_cuMemAllocPitch:
             allocation_parameters.cuMemAllocPitch = *reinterpret_cast<cuMemAllocPitch_params *>(params);
             allocation_type = allocation_type::cuMemAllocPitch;
+            {
+                cuda_address_t location = static_cast<cuda_address_t>(*allocation_parameters.cuMemAllocPitch.dptr);
+                pitch = *allocation_parameters.cuMemAllocPitch.pPitch;
+                cuda_address_t buf_size = pitch * allocation_parameters.cuMemAllocPitch.Height;
+                range = device_buffer_range(location, location + buf_size);
+            }
             break;
         case API_CUDA_cuMemAlloc_v2:
             allocation_parameters.cuMemAlloc_v2 = *reinterpret_cast<cuMemAlloc_v2_params *>(params);
@@ -93,7 +104,14 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffe
         case API_CUDA_cuMemAllocPitch_v2:
             allocation_parameters.cuMemAllocPitch_v2 = *reinterpret_cast<cuMemAllocPitch_v2_params *>(params);
             allocation_type = allocation_type::cuMemAllocPitch_v2;
+            {
+                cuda_address_t location = static_cast<cuda_address_t>(*allocation_parameters.cuMemAllocPitch_v2.dptr);
+                pitch = *allocation_parameters.cuMemAllocPitch_v2.pPitch;
+                cuda_address_t buf_size = pitch * allocation_parameters.cuMemAllocPitch_v2.Height;
+                range = device_buffer_range(location, location + buf_size);
+            }
             break;
+        /*
         case API_CUDA_cuMemAllocManaged:
             allocation_parameters.cuMemAllocManaged = *reinterpret_cast<cuMemAllocManaged_params *>(params);
             allocation_type = allocation_type::cuMemAllocManaged;
@@ -114,9 +132,66 @@ device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffe
             allocation_parameters.cuMemAllocFromPoolAsync_ptsz = *reinterpret_cast<cuMemAllocFromPoolAsync_ptsz_params *>(params);
             allocation_type = allocation_type::cuMemAllocFromPoolAsync_ptsz;
             break;
+         */
         default:
             throw std::runtime_error("Unsupported API call!");
     }
+}
+
+size_t device_buffer::get_elem_type_size() const noexcept
+{
+    switch (type) {
+        case type_float: return sizeof(float);
+        case type_double: return sizeof(double);
+        case type_int32: return sizeof(int32_t);
+        case type_int64: return sizeof(int64_t);
+        default: return sizeof(char);
+    }
+}
+
+std::string device_buffer::get_elem_type_name() const
+{
+    switch (type) {
+        case type_float: return "t_float";
+        case type_double: return "t_double";
+        case type_int32: return "t_int32";
+        case type_int64: return "t_int64";
+        default: return "t_char";
+    }
+}
+
+bool device_buffer::is_pitched() const noexcept
+{
+    return (allocation_type == allocation_type::cuMemAllocPitch ||
+        allocation_type == allocation_type::cuMemAllocPitch_v2);
+}
+
+size_t device_buffer::address_to_index(cuda_address_t addr) const noexcept
+{
+    if (is_pitched()) {
+        cuda_address_t off = addr - range.from;
+        cuda_address_t x = (off % pitch) / get_elem_type_size();
+        cuda_address_t y = off / pitch;
+
+        return y * get_width() + x;
+    }
+
+    return (addr - range.from) / get_elem_type_size();
+}
+
+size_t device_buffer::get_width() const noexcept
+{
+    if (allocation_type == allocation_type::cuMemAllocPitch)
+        return allocation_parameters.cuMemAllocPitch.WidthInBytes / get_elem_type_size();
+    else if (allocation_type == allocation_type::cuMemAllocPitch_v2)
+        return allocation_parameters.cuMemAllocPitch_v2.WidthInBytes / get_elem_type_size();
+
+    return 0;
+}
+
+size_t device_buffer::get_height() const noexcept
+{
+    return range.size() / pitch;
 }
 
 
@@ -139,11 +214,13 @@ void device_buffer_tracker::on_free(void *location)
         throw std::runtime_error("No such buffer is currently tracked!");
 
 
-    auto range = user_buffers.equal_range(idx->second.range);
+    for (auto& buf : user_buffers) {
+        if (buf.id != idx->second.id)
+            continue;
 
-    for (auto it = range.first; it != range.second; it++)
-        if (it->second.id == idx->second.id)
-            it->second.free_time = now;
+        buf.free_time = now;
+        break;
+    }
 
     active_buffers.erase(idx);
 }
@@ -171,62 +248,12 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
 
     idx->second.name_tag = name;
     idx->second.type = type;
-    user_buffers.emplace(idx->second.range, idx->second);
+    user_buffers.emplace_back(idx->second);
 }
 
 std::string device_buffer_tracker::get_info_string() const
 {
     throw std::runtime_error("Not implemented!");
-}
-
-void device_buffer_tracker::find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const
-{
-    // when tells us the point time when this memory access happened
-    // by now the associated buffer can very well be freed again
-
-    for (uint32_t i = 0; i < 32; ++i) {
-        device_buffer_range search_range(addresses[i]);
-        auto range = user_buffers.equal_range(search_range);
-
-        if (range.first == range.second) {
-            goto error;
-        }
-
-        for (auto it = range.first; it != range.second; it++) {
-            // this should have exactly one match
-
-            if (it->first.in_range(addresses[i]) && it->second.was_active_at(when)) {
-                ids[i] = it->second.id;
-                goto next;
-            }
-        }
-
-error:
-
-        if (range.first == range.second) {
-            std::cout << "WARNING: EMPTY RANGE!\n"
-                << std::hex << "(" << range.first->first.from << ", " << range.first->first.to << ") "
-                << "(" << range.second->first.from << ", " << range.second->first.to << ")\n";
-        }
-
-        // no match found, bad!
-        search_range = device_buffer_range(addresses[i]);
-        std::cout << std::hex << "address: " << addresses[i]
-            << " at " << std::dec << util::time_to_ns(when) << std::endl;
-
-        for (const auto& it : user_buffers) {
-            std::cout << it.first.from << " TO " << it.first.to << ": "
-                << it.second.name_tag << std::endl;
-            std::cout << "cmp: " << (it.first < search_range) << std::endl;
-            std::cout << "active: " << it.second.was_active_at(when) << std::endl;
-            std::cout << std::dec << (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(it.second.malloc_time - util::time_zero()).count() << ' ' << i << std::endl;
-        }
-
-        throw std::runtime_error("No match found for given address and timepoint!");
-
-next:
-        void();
-    }
 }
 
 void device_buffer_tracker::find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
@@ -236,22 +263,33 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
         if (!addresses[i])
             continue;
 
+        /*
         device_buffer_range search_range(addresses[i]);
         auto range = user_buffers.equal_range(search_range);
 
         if (range.first == range.second) {
             goto error;
         }
+         */
 
-        for (auto it = range.first; it != range.second; it++) {
-            // this should have exactly one match
-
-            if (it->first.in_range(addresses[i]) && it->second.was_active_at(when)) {
-                ids[i] = it->second.id;
-                indices[i] = (addresses[i] - it->first.from) / it->second.get_elem_type_size();
+        for (const auto& it : user_buffers) {
+            if (it.range.in_range(addresses[i]) && it.was_active_at(when)) {
+                ids[i] = it.id;
+                //indices[i] = (addresses[i] - it.range.from) / it.second.get_elem_type_size();
+                indices[i] = it.address_to_index(addresses[i]);
                 goto next;
             }
         }
+
+        //for (auto it = user_buffers.cbegin(); it != user_buffers.cend(); it++) {
+        //    // this should have exactly one match
+//
+        //    if (it.in_range(addresses[i]) && it->second.was_active_at(when)) {
+        //        ids[i] = it->second.id;
+        //        indices[i] = (addresses[i] - it->first.from) / it->second.get_elem_type_size();
+        //        goto next;
+        //    }
+        //}
 
 error:
         throw std::runtime_error("No match found for given address and timepoint!");
@@ -266,10 +304,10 @@ std::string device_buffer_tracker::get_buffer_info_string() const
     std::stringstream ss;
 
     for (const auto& it : user_buffers) {
-        ss << it.second.name_tag << '\n'
-            << "range from " << std::hex << it.first.from << " to " << it.first.to << '\n'
-            << "alive from " << std::dec << util::time_to_ns(it.second.malloc_time) << " to "
-            << util::time_to_ns(it.second.free_time) << '\n';
+        //ss << it.second.name_tag << '\n'
+        //    << "range from " << std::hex << it.first.from << " to " << it.first.to << '\n'
+        //    << "alive from " << std::dec << util::time_to_ns(it.second.malloc_time) << " to "
+        //    << util::time_to_ns(it.second.free_time) << '\n';
     }
 
     return ss.str();

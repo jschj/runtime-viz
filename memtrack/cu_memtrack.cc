@@ -13,9 +13,9 @@ namespace memtrack
     int64_t device_host_time_difference;
 
 
-    void cu_memtrack_init(const std::string& json_dump_file)
+    void cu_memtrack_init(const std::string& json_dump_file, const std::string& acc_dump_file)
     {
-        bson_encoder = std::make_unique<streaming_bson_encoder>(json_dump_file);
+        bson_encoder = std::make_unique<streaming_bson_encoder>(json_dump_file, acc_dump_file);
     }
 
     void cu_memtrack_begin()
@@ -58,6 +58,8 @@ namespace memtrack
             if (!access.addrs[i])
                 continue;            
 
+            //bson_encoder->acc_file << access.when << ids[i] << indices[i];
+
             enc.begin_object();
             enc.key("t");
             // hack to circumvent jsoncons moronic bound checking
@@ -82,22 +84,36 @@ namespace memtrack
         enc.begin_array();
 
         for (const auto& entry_pair : tracker()) {
+            bool is_pitched = entry_pair.is_pitched();
+
             enc.begin_object();
             
             enc.key("id");
-            enc.uint64_value(entry_pair.second.id);
+            enc.uint64_value(entry_pair.id);
 
             enc.key("type");
-            enc.string_value("plain");
+            enc.string_value(is_pitched ? "pitched" : "plain");
 
             enc.key("name");
-            enc.string_value(entry_pair.second.name_tag);
+            enc.string_value(entry_pair.name_tag);
 
-            enc.key("height");
-            enc.uint64_value(entry_pair.second.range.size() / entry_pair.second.get_elem_type_size());
+            if (is_pitched) {
+                enc.key("height");
+                enc.uint64_value(entry_pair.get_height());
+
+                enc.key("width");
+                enc.uint64_value(entry_pair.get_width());
+
+                // TODO: Should this be in bytes?
+                enc.key("pitch");
+                enc.uint64_value(entry_pair.pitch);
+            } else {
+                enc.key("height");
+                enc.uint64_value(entry_pair.range.size() / entry_pair.get_elem_type_size());
+            }
 
             enc.key("type_name");
-            enc.string_value(entry_pair.second.get_elem_type_name());
+            enc.string_value(entry_pair.get_elem_type_name());
 
             enc.end_object();
         }

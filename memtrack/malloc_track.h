@@ -37,17 +37,12 @@ struct device_buffer_range
 
     bool operator <(const device_buffer_range& other) const noexcept
     {
-        if (other.from == other.to) {
+        //if (other.from == other.to) {
             // equal iff. in range
-            return !(from <= other.from < to);
-        }
+        //    return !(from <= other.from < to);
+        //}
 
         return from < other.from;
-    }
-
-    bool operator ==(const device_buffer_range& other) const
-    {
-        throw std::runtime_error("LALA");
     }
 };
 
@@ -56,6 +51,9 @@ struct device_buffer
     device_buffer_range range;
     uint32_t id;
 
+    // in bytes
+    size_t pitch = 1;
+    
     util::time_point malloc_time;
     // can be changed afterwards
     util::time_point free_time = util::time_zero();
@@ -105,31 +103,14 @@ struct device_buffer
             (free_time == util::time_zero() ? true : when <= free_time);            
     }
 
-    size_t get_elem_type_size() const noexcept
-    {
-        switch (type) {
-            case type_float: return sizeof(float);
-            case type_double: return sizeof(double);
-            case type_int32: return sizeof(int32_t);
-            case type_int64: return sizeof(int64_t);
-            default: return sizeof(char);
-        }
-    }
+    size_t get_elem_type_size() const noexcept;
+    std::string get_elem_type_name() const;
 
-    std::string get_elem_type_name() const
-    {
-        std::stringstream ss;
-
-        switch (type) {
-            case type_float: ss << "t_float"; break;
-            case type_double: ss << "t_double"; break;
-            case type_int32: ss << "t_int32"; break;
-            case type_int64: ss << "t_int64"; break;
-            default: ss << "t_char"; break;
-        }
-
-        return ss.str();
-    }
+    // these functions are intended to be called at the end when the buffer data is written
+    bool is_pitched() const noexcept;
+    size_t address_to_index(cuda_address_t addr) const noexcept;
+    size_t get_width() const noexcept;
+    size_t get_height() const noexcept;
 };
 
 class device_buffer_tracker
@@ -146,7 +127,8 @@ private:
     // key is an address range rather than a single pointer. For this
     // reason we use map as it uses a sorted tree under the hood which
     // is good for ranges.
-    std::multimap<device_buffer_range, device_buffer> user_buffers;
+    //std::multimap<device_buffer_range, device_buffer> user_buffers;
+    std::vector<device_buffer> user_buffers;
 
     uint32_t next_buffer_id = 0;
     std::unordered_set<std::string> assigned_names;
@@ -162,7 +144,6 @@ public:
 
     std::string get_info_string() const;
 
-    void find_associated_buffer_ids(util::time_point when, const cuda_address_t addresses[32], uint32_t ids[32]) const;
     void find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
         uint32_t ids[32], uint64_t indices[32]) const;
 

@@ -28,7 +28,8 @@ namespace memtrack
         std::ofstream out_file;
         bson::bson_stream_encoder encoder;
     public:
-        streaming_bson_encoder(const std::string& file_name);
+        std::ofstream acc_file;
+        streaming_bson_encoder(const std::string& bson_file_name, const std::string& access_file_name);
 
         bson::bson_stream_encoder& get_encoder() { return encoder; }
 

@@ -108,7 +108,7 @@ void nvbit_at_init() {
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&mutex, &attr);
 
-    memtrack::cu_memtrack_init("vecadd.bson");
+    memtrack::cu_memtrack_init("memtrack.bson", "accesses.bin");
     memtrack::cu_memtrack_begin();
 }
 
