@@ -58,8 +58,9 @@ namespace memtrack
             if (!access.addrs[i])
                 continue;            
 
-            //bson_encoder->acc_file << access.when << ids[i] << indices[i];
+            bson_encoder->acc_file << access.when << ids[i] << indices[i];
 
+            /*
             enc.begin_object();
             enc.key("t");
             // hack to circumvent jsoncons moronic bound checking
@@ -71,6 +72,7 @@ namespace memtrack
             // TODO: causes error if first bit of address is 1
             enc.uint64_value(indices[i]);
             enc.end_object();
+             */
         }
     }
 
