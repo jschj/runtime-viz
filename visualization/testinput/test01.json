@@ -1,0 +1,40 @@
+{
+  "buffers": [
+    {
+      "id": 0,
+      "type": "plain",
+      "name": "test buffer (plain)",
+      "height": 10
+    },
+    {
+      "id": 1,
+      "type": "pitched",
+      "name": "test buffer (pitched)",
+      "height": 10,
+      "width": 10,
+      "pitch": 10
+    }
+  ],
+  "accesses": [
+    {
+      "t": 0,
+      "b": 0,
+      "i": 0
+    },
+    {
+      "t": 1,
+      "b": 0,
+      "i": 1
+    },
+    {
+      "t": 2,
+      "b": 0,
+      "i": 9
+    },
+    {
+      "t": 100,
+      "b": 1,
+      "i": 25
+    }
+  ]
+}
