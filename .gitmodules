@@ -1,3 +1,6 @@
 [submodule "jsoncons"]
 	path = jsoncons
 	url = https://github.com/danielaparker/jsoncons.git
+[submodule "zlib"]
+	path = zlib
+	url = https://github.com/madler/zlib.git
