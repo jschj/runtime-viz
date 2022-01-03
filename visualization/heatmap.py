@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 import buffer
 from time_information import TimeInformation
+import matplotlib.patches as mpatches
 
 
 def _calc_resolution(actual_res, max_res):
@@ -42,6 +43,9 @@ class Heatmap:
 
         self.ti = ti
 
+        # largest entry in heatmap
+        self.highest = 0
+
         # heatmap dimension
         hm_width = _calc_resolution(b.width, Heatmap.MAX_RES)
         hm_height = _calc_resolution(b.height, Heatmap.MAX_RES)
@@ -67,6 +71,10 @@ class Heatmap:
                 self.prefix_sums[frame_index][x][y] = \
                     self.prefix_sums[frame_index][x][y] + 1
 
+                # updated max
+                if self.prefix_sums[frame_index][x][y] > self.highest:
+                    self.highest = self.prefix_sums[frame_index][x][y]
+
                 # update histogram
                 self.histogram[frame_index] = self.histogram[frame_index] + 1
 
@@ -82,7 +90,6 @@ class Heatmap:
 
         img = self.calc_frame(timerange=(ti.start_time, ti.end_time))
 
-        # .im = ax.imshow(img, vmin=0, aspect=2)
         self.im = ax.imshow(img, vmin=0)
 
         # cosmetics
@@ -101,6 +108,7 @@ class Heatmap:
         # this was an attempt to draw a grid into the heatmap
         # if hm_height == b.height and hm_width == b.width:
         #    ax.grid(color="w", linestyle='-', linewidth=1)
+
 
     def calc_frame(self, timerange: Tuple[int, int]):
         """
@@ -124,6 +132,6 @@ class Heatmap:
         """ Return histogram of memory accesses with timesteps as categories. """
         return self.histogram
 
-    def update(self, timerange):
+    def update(self, timerange, cmap):
         """ Callback function to update the heatmap to a given timerange. """
         self.im.set_data(self.calc_frame(timerange=timerange))
