@@ -58,6 +58,9 @@ namespace memtrack
             if (!access.addrs[i])
                 continue;            
 
+            bson_encoder->add_raw_access(ids[i], access.when - device_host_time_difference, indices[i]);
+            continue;
+
             //bson_encoder->acc_file << access.when << ids[i] << indices[i];
 
             enc.begin_object();

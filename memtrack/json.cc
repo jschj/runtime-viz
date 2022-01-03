@@ -11,11 +11,41 @@ namespace memtrack
 
     streaming_bson_encoder::streaming_bson_encoder(const std::string& file_name, const std::string& access_file_name):
         out_file(file_name, std::ios::binary),
-        encoder(out_file),
-        acc_file(access_file_name, std::ios::binary)
+        encoder(out_file)
     {
-        if (!out_file.is_open() || !acc_file.is_open())
+        if (!out_file.is_open())
             throw std::runtime_error("Could not open dump files!");
+
+        // initialize according to documentation (see zlib.h)
+        /*
+        stream.zalloc = [](voidpf opaque, uInt items, uInt size) -> voidpf {
+            return std::malloc(items * size);
+        };
+
+        stream.zfree = [](voidpf opaque, voidpf address) -> void {
+            std::free(address);
+        };
+
+        stream.opaque = nullptr;
+
+        if (deflateInit(&stream, Z_DEFAULT_COMPRESSION) != Z_OK)
+            throw std::runtime_error("Could not init zlib deflation!");
+         */
+
+        gz_file = gzopen(access_file_name.c_str(), "w");
+
+        if (!gz_file)
+            throw std::runtime_error("Could not open dump file!");
+
+        if (gzsetparams(gz_file, Z_DEFAULT_COMPRESSION, Z_DEFAULT_STRATEGY) != Z_OK)
+            throw std::runtime_error("Could nto set params!");
+
+
+    }
+
+    streaming_bson_encoder::~streaming_bson_encoder()
+    {
+        gzclose(gz_file);
     }
 
     void streaming_bson_encoder::begin()
@@ -38,6 +68,26 @@ namespace memtrack
     void streaming_bson_encoder::end(const jsoncons::json& j, const std::string& field_name)
     {
         throw std::runtime_error("Not implemented!");
+    }
+
+    void streaming_bson_encoder::add_raw_access(uint8_t buffer_id, uint64_t time_point, uint64_t index)
+    {
+        struct {
+            uint8_t a1; uint64_t a2; uint64_t a3;
+        } __attribute__((packed)) tmp_struct { buffer_id, time_point, index };
+
+        /*
+        stream.next_in = reinterpret_cast<z_const Bytef *>(&tmp_struct);
+        stream.avail_in = sizeof(tmp_struct);
+
+        // TODO: set out
+
+        if (deflate(&stream, Z_FULL_FLUSH) != Z_OK)
+            throw std::runtime_error("Error deflating data!");
+         */
+
+        if (!gzwrite(gz_file, &tmp_struct, sizeof(tmp_struct)))
+            throw std::runtime_error("Could not write data!");
     }
 
 } // namespace memtrack
