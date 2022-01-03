@@ -40,6 +40,8 @@ if __name__ == '__main__':
         global_histogram = global_histogram + hm.get_local_histogram()
         heatmaps.append(hm)
 
+    print("Show visualization window...")
+
     # hide unused plots
     i = i + 1
     while i < (rows - 1) * columns:
@@ -89,3 +91,5 @@ if __name__ == '__main__':
 
     # show plot window
     plt.show()
+
+    print("Goodbye!")
