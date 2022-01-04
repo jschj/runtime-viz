@@ -251,26 +251,14 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
     user_buffers.emplace_back(idx->second);
 }
 
-std::string device_buffer_tracker::get_info_string() const
-{
-    throw std::runtime_error("Not implemented!");
-}
-
 void device_buffer_tracker::find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
         uint32_t ids[32], uint64_t indices[32]) const
 {
+    std::unique_lock<std::mutex> lk(mut);
+
     for (uint32_t i = 0; i < 32; ++i) {
         if (!addresses[i])
             continue;
-
-        /*
-        device_buffer_range search_range(addresses[i]);
-        auto range = user_buffers.equal_range(search_range);
-
-        if (range.first == range.second) {
-            goto error;
-        }
-         */
 
         for (const auto& it : user_buffers) {
             if (it.range.in_range(addresses[i]) && it.was_active_at(when)) {
@@ -280,16 +268,6 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
                 goto next;
             }
         }
-
-        //for (auto it = user_buffers.cbegin(); it != user_buffers.cend(); it++) {
-        //    // this should have exactly one match
-//
-        //    if (it.in_range(addresses[i]) && it->second.was_active_at(when)) {
-        //        ids[i] = it->second.id;
-        //        indices[i] = (addresses[i] - it->first.from) / it->second.get_elem_type_size();
-        //        goto next;
-        //    }
-        //}
 
 error:
         throw std::runtime_error("No match found for given address and timepoint!");
@@ -302,15 +280,22 @@ next:
 std::string device_buffer_tracker::get_buffer_info_string() const
 {
     std::stringstream ss;
+    std::unique_lock<std::mutex> lk(mut);
 
     for (const auto& it : user_buffers) {
-        //ss << it.second.name_tag << '\n'
-        //    << "range from " << std::hex << it.first.from << " to " << it.first.to << '\n'
-        //    << "alive from " << std::dec << util::time_to_ns(it.second.malloc_time) << " to "
-        //    << util::time_to_ns(it.second.free_time) << '\n';
+        ss << it.name_tag << '\n'
+            << "range from " << std::hex << it.range.from << " to " << it.range.to << '\n'
+            << "alive from " << std::dec << util::time_to_ns(it.malloc_time) << " to "
+            << util::time_to_ns(it.free_time) << '\n';
     }
 
     return ss.str();
+}
+
+std::vector<device_buffer> device_buffer_tracker::get_user_buffers_copy() const
+{
+    std::unique_lock<std::mutex> lk(mut);
+    return user_buffers;
 }
 
 static device_buffer_tracker instance;
