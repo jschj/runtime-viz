@@ -25,11 +25,11 @@ target_include_directories(memtrack PUBLIC
     ${CMAKE_SOURCE_DIR}
     # header only library
     "${CMAKE_SOURCE_DIR}/jsoncons/include/"
-    ${CMAKE_SOURCE_DIR}/zlib/
+    ${CMAKE_SOURCE_DIR}/libs/zlib/
 )
 
 #set_target_properties(memtrack PROPERTIES
 #    PUBLIC_HEADER memtrack.h
 #)
 
-target_link_libraries(memtrack zlib)
+target_link_libraries(memtrack ${CMAKE_SOURCE_DIR}/libs/zlib/libz.so)

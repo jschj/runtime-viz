@@ -7,7 +7,7 @@
 #include <jsoncons_ext/jsonpath/jsonpath.hpp>
 #include <jsoncons_ext/bson/bson.hpp>
 
-#include <zlib/zlib.h>
+#include <zlib.h>
 
 #include <tools/mem_trace/common.h>
 #include "malloc_track.h"
