@@ -50,6 +50,8 @@ class Heatmap:
         hm_width = _calc_resolution(b.width, Heatmap.MAX_RES)
         hm_height = _calc_resolution(b.height, Heatmap.MAX_RES)
         print(f"Using a {hm_height}x{hm_width} heatmap for {b.height}x{b.width} buffer ({b.name}).")
+        # stores how many buffer entries are represented by a single pixel in the heatmap
+        self.downsampling_factor = (b.width // hm_width) * (b.height // hm_height)
 
         self.histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
@@ -81,12 +83,14 @@ class Heatmap:
         # convert single frames to prefix sums
         print(f"Calculating prefix sums of heatmaps for buffer {b.name}...")
         for i, frame in enumerate(self.prefix_sums):
-            # do not change the first frame
-            if i == 0:
-                continue
+            # devide every heatmap entry by downsampling factor to display average access count
+            # this is only relevant if downsampling is active,
+            # because a single pixel will represent more than one buffer entry
+            self.prefix_sums[i] = self.prefix_sums[i] / self.downsampling_factor
 
-            # accumulate every other frame with its predecessor
-            self.prefix_sums[i] = self.prefix_sums[i] + self.prefix_sums[i - 1]
+            # do not change the first frame
+            if i > 0:
+                self.prefix_sums[i] = self.prefix_sums[i] + self.prefix_sums[i - 1]
 
         img = self.calc_frame(timerange=(ti.start_time, ti.end_time))
 

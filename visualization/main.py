@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     # Create the RangeSlider
     slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
-    slider = RangeSlider(slider_ax, "Range",
+    slider = RangeSlider(slider_ax, "Time selection",
                          valmin=ti.start_time,
                          valmax=ti.end_time,
                          valstep=ti.timestep_size,
