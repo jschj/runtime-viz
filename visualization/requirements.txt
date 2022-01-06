@@ -1,4 +1,4 @@
 bson
 numpy
 matplotlib
-primefac
+tqdm

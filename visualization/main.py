@@ -4,6 +4,8 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.widgets import RangeSlider
 
@@ -34,11 +36,31 @@ if __name__ == '__main__':
     heatmaps = []
     i = 0
     global_histogram = np.zeros(shape=(ti.timestep_count + 1,))
+
+    # largest entry in any heatmap (to determine colormap)
+    max_number = 0
     for i, (_, b) in enumerate(buffers.items()):
         axis = plt.subplot(rows, columns, i + 1)
         hm = Heatmap(b, ti, axis)
+
+        # update hightest
+        if hm.highest > max_number:
+            max_number = hm.highest
+
         global_histogram = global_histogram + hm.get_local_histogram()
         heatmaps.append(hm)
+
+    max_number = max_number + 1
+
+    # get discrete colormap
+    cmap = plt.get_cmap('copper', max_number)
+
+    # apply colormap
+    for hm in heatmaps:
+        hm.im.set_cmap(cmap=cmap)
+        hm.im.set(clim=(0, max_number))
+
+    print("Show visualization window...")
 
     # hide unused plots
     i = i + 1
@@ -53,10 +75,12 @@ if __name__ == '__main__':
         end = end + ti.timestep_size
     plt.plot(np.arange(ti.start_time, end, ti.timestep_size), global_histogram)
     plt.xlim(ti.start_time - ti.duration // 20, ti.end_time + ti.duration // 20)
+    plt.title("Access histogram")
+    plt.xlabel("Time (ns)")
 
     # Create the RangeSlider
     slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
-    slider = RangeSlider(slider_ax, "Range",
+    slider = RangeSlider(slider_ax, "Time selection",
                          valmin=ti.start_time,
                          valmax=ti.end_time,
                          valstep=ti.timestep_size,
@@ -67,13 +91,27 @@ if __name__ == '__main__':
     lower_limit_line = overview.axvline(slider.val[0], color='k')
     upper_limit_line = overview.axvline(slider.val[1], color='k')
 
+    # create color legend
+    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, max_number), cmap=cmap),
+                        ax=overview,
+                        orientation="horizontal",
+                        location="top",
+                        pad=0.5,
+                        label="Color legend"
+                        )
+
+    number_of_ticks = min(4, max_number)
+    ticks = np.linspace(0, max_number, num=int(number_of_ticks), endpoint=True)
+    tick_locs = (ticks + 0.5)
+    cbar.set_ticks(tick_locs)
+    cbar.set_ticklabels([int(x) for x in ticks])
 
     def update(val):
         """ Callback function when the slider is moved"""
         # print(f"Slider moved! New timerange: {val[0]} - {val[1]}")
 
         for h in heatmaps:
-            h.update(val)
+            h.update(val, cmap=cmap)
 
         # print("Finished calculating new heatmaps.")
 
@@ -89,3 +127,5 @@ if __name__ == '__main__':
 
     # show plot window
     plt.show()
+
+    print("Goodbye!")

@@ -3,6 +3,7 @@ import numpy as np
 # Divisor which is applied to all timepoints
 TIME_DIVISOR = 1
 
+
 class MemoryAccess:
     def __init__(self, x_index, y_index):
         self.x_index = x_index
@@ -68,8 +69,10 @@ class Buffer2D(Buffer):
     def add_memory_access(self, details: dict):
         time = details['t'] // TIME_DIVISOR
         index = details['i']
-        x_index = index // self.pitch
-        y_index = index % self.pitch
+
+        # pitch is considered in tracking code
+        x_index = index % self.width
+        y_index = index // self.width
         ma = MemoryAccess(x_index, y_index)
 
         if time not in self.accesses:
