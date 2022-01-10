@@ -86,7 +86,9 @@ namespace memtrack
 
         enc.begin_array();
 
-        for (const auto& entry_pair : tracker()) {
+        std::vector<device_buffer> user_buffers = tracker().get_user_buffers_copy();
+
+        for (const auto& entry_pair : user_buffers) {
             bool is_pitched = entry_pair.is_pitched();
 
             enc.begin_object();
