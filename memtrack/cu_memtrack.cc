@@ -4,6 +4,7 @@
 #include <limits>
 #include <atomic>
 
+#include "access_compression.h"
 #include "json.h"
 
 
@@ -11,11 +12,13 @@ namespace memtrack
 {
     std::unique_ptr<streaming_bson_encoder> bson_encoder;
     int64_t device_host_time_difference;
+    std::unique_ptr<access_compression> acc_comp;
 
 
     void cu_memtrack_init(const std::string& json_dump_file, const std::string& acc_dump_file)
     {
         bson_encoder = std::make_unique<streaming_bson_encoder>(json_dump_file, acc_dump_file);
+        acc_comp = std::make_unique<access_compression>(1000000, 1000000 * 32, "access_dump.bin");
     }
 
     void cu_memtrack_begin()
@@ -51,29 +54,18 @@ namespace memtrack
         };
         tracker().find_associated_buffers(when, access.addrs, ids, indices);
 
-        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
-
         for (uint32_t i = 0; i < 32; ++i) {
             // NULL means no access!    
             if (!access.addrs[i])
-                continue;            
+                continue;
 
-            bson_encoder->add_raw_access(ids[i], access.when - device_host_time_difference, indices[i]);
-            continue;
+            access_compression::raw_buffer_access acc{
+                .buffer_id = ids[i],
+                .time_point = access.when - device_host_time_difference,
+                .index = indices[i],
+            };
 
-            //bson_encoder->acc_file << access.when << ids[i] << indices[i];
-
-            enc.begin_object();
-            enc.key("t");
-            // hack to circumvent jsoncons moronic bound checking
-            //enc.uint64_value(access.when, jsoncons::semantic_tag::epoch_nano);
-            enc.int64_value(static_cast<int64_t>(access.when - device_host_time_difference));
-            enc.key("b");
-            enc.uint64_value(ids[i]);
-            enc.key("i");
-            // TODO: causes error if first bit of address is 1
-            enc.uint64_value(indices[i]);
-            enc.end_object();
+            acc_comp->track_access(acc);
         }
     }
 
