@@ -31,8 +31,11 @@ namespace memtrack
         bson::bson_stream_encoder encoder;
 
         // zlib stuff
-        //z_stream stream;
+        z_stream stream;
         gzFile gz_file;
+
+        std::vector<uint8_t> compressed_bytes;
+        size_t compressed_bytes_index;
     public:
         std::ofstream acc_file;
         streaming_bson_encoder(const std::string& bson_file_name, const std::string& access_file_name);

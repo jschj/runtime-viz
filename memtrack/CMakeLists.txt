@@ -14,6 +14,7 @@ add_library(memtrack SHARED
     json.cc
     cu_memtrack.cc
     util.cc
+    access_compression.cc
 )
 
 target_compile_features(memtrack PRIVATE cxx_std_17)
