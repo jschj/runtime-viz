@@ -52,6 +52,7 @@ class Heatmap:
         print(f"Using a {hm_height}x{hm_width} heatmap for {b.height}x{b.width} buffer ({b.name}).")
         # stores how many buffer entries are represented by a single pixel in the heatmap
         self.downsampling_factor = (b.width // hm_width) * (b.height // hm_height)
+        print(f'self.downsampling_factor={self.downsampling_factor}')
 
         self.histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
@@ -66,8 +67,8 @@ class Heatmap:
 
             for access in b.accesses[tp]:
                 # calculate index in frame
-                x = math.floor((access.x_index / b.width) * hm_width)
-                y = math.floor((access.y_index / b.height) * hm_height)
+                x = math.floor((access.x_index + 0.5) / b.width * hm_width)
+                y = math.floor((access.y_index + 0.5) / b.height * hm_height)
 
                 # update heatmap frame
                 self.prefix_sums[frame_index][x][y] = \
