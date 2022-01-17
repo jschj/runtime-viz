@@ -200,6 +200,9 @@ void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
     device_buffer buf(cbid, params, next_buffer_id++);
     std::unique_lock<std::mutex> lk(mut);
     active_buffers.emplace(reinterpret_cast<void *>(buf.range.from), buf);
+
+    if (next_buffer_id == 256)
+        std::cerr << "WARNING: Only buffer ids up to 255 are supported in the dump file format!" << std::endl;
 }
 
 void device_buffer_tracker::on_free(void *location)

@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 add_library(memtrack SHARED
     malloc_track.cc
-    json.cc
+    #json.cc
     cu_memtrack.cc
     util.cc
     access_compression.cc

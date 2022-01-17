@@ -4,34 +4,25 @@
 #include <limits>
 #include <atomic>
 
+#include <jsoncons/json.hpp>
+#include <jsoncons_ext/jsonpath/jsonpath.hpp>
+#include <jsoncons_ext/bson/bson.hpp>
+
 #include "access_compression.h"
-#include "json.h"
+#include "malloc_track.h"
 
 
 namespace memtrack
 {
-    std::unique_ptr<streaming_bson_encoder> bson_encoder;
+    std::string json_path;
     int64_t device_host_time_difference;
     std::unique_ptr<access_compression> acc_comp;
 
 
-    void cu_memtrack_init(const std::string& json_dump_file, const std::string& acc_dump_file)
+    void cu_memtrack_init(const std::string& json_file_path, const std::string& access_dump_file)
     {
-        bson_encoder = std::make_unique<streaming_bson_encoder>(json_dump_file, acc_dump_file);
-        acc_comp = std::make_unique<access_compression>(1000000, 1000000 * 32, "access_dump.bin");
-    }
-
-    void cu_memtrack_begin()
-    {
-        std::cout << "beginning bson" << std::endl;
-        bson_encoder->begin();
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().begin_object();
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().key("accesses");
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().begin_array();
-        std::cout << "done" << std::endl;
+        json_path = json_file_path;
+        acc_comp = std::make_unique<access_compression>(access_dump_file);
     }
 
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params)
@@ -60,20 +51,25 @@ namespace memtrack
                 continue;
 
             access_compression::raw_buffer_access acc{
-                .buffer_id = ids[i],
+                .buffer_id = static_cast<uint8_t>(ids[i]),
                 .time_point = access.when - device_host_time_difference,
-                .index = indices[i],
+                .index = static_cast<uint32_t>(indices[i]),
             };
 
             acc_comp->track_access(acc);
         }
     }
 
-    void cu_memtrack_end()
+    void cu_memtrack_dump_buffers()
     {
-        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
+        std::ofstream stream(json_path, std::ios_base::out);
 
-        enc.end_array();
+        if (!stream.is_open())
+            throw std::runtime_error("Could not open JSON file!");
+
+        jsoncons::json_stream_encoder enc(stream);
+
+        enc.begin_object();
         enc.key("buffers");
 
         enc.begin_array();
@@ -119,8 +115,6 @@ namespace memtrack
 
         enc.end_object();
         enc.flush();
-
-        bson_encoder.reset();
     }
 
     void cu_memtrack_set_time_difference(int64_t delta)
