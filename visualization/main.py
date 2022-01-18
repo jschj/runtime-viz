@@ -1,6 +1,7 @@
 import math
 import sys
 import os
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,16 +15,21 @@ from heatmap import Heatmap
 import time_information
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file>")
+    start_wclock = time.time() # for performance measurement
+    if len(sys.argv) != 5:
+        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file> <start time> <end time>")
         exit(255)
 
     buffer_filepath = sys.argv[1]
     access_filepath = sys.argv[2]
+    start_time = int(sys.argv[3])
+    end_time = int(sys.argv[4])
 
     # read input
     buffers = input.init_buffers(buffer_filepath)
-    ti = time_information.TimeInformation(buffers)
+    ti = time_information.TimeInformation(start_time, end_time)
+    for _, b in buffers.items():
+        b.initialize_heatmap(ti)
     histogram = input.process_accesses(buffers, access_filepath, ti)
 
     # calculate size of output plots
@@ -40,28 +46,21 @@ if __name__ == '__main__':
     i = 0
 
     # largest entry in any heatmap (to determine colormap)
-    max_number = 0
     for i, (_, b) in enumerate(buffers.items()):
         axis = plt.subplot(rows, columns, i + 1)
-        hm = Heatmap(b, ti, axis)
+        heatmaps.append(Heatmap(b, axis))
 
-        # update hightest
-        if hm.highest > max_number:
-            max_number = hm.highest
-
-        heatmaps.append(hm)
-
-    max_number = max_number + 1
+    highest = max([hm.get_maximum() for hm in heatmaps])
 
     # get discrete colormap
-    cmap = plt.get_cmap('copper', max_number)
+    cmap = plt.get_cmap('copper', highest)
 
     # apply colormap
     for hm in heatmaps:
         hm.im.set_cmap(cmap=cmap)
-        hm.im.set(clim=(0, max_number))
+        hm.im.set(clim=(0, highest))
 
-    print("Show visualization window...")
+    print(f"Setup took {time.time() - start_wclock:.2f} seconds. Showing visualization window...")
 
     # hide unused plots
     i = i + 1
@@ -93,7 +92,7 @@ if __name__ == '__main__':
     upper_limit_line = overview.axvline(slider.val[1], color='k')
 
     # create color legend
-    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, max_number), cmap=cmap),
+    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, highest), cmap=cmap),
                         ax=overview,
                         orientation="horizontal",
                         location="top",
@@ -101,27 +100,22 @@ if __name__ == '__main__':
                         label="Color legend"
                         )
 
-    number_of_ticks = min(4, max_number)
-    ticks = np.linspace(0, max_number, num=int(number_of_ticks), endpoint=True)
-    tick_locs = (ticks + 0.5)
+    number_of_ticks = min(4, highest)
+    ticks = np.linspace(0, highest, num=int(number_of_ticks), endpoint=True)
+    tick_locs = (ticks + 0.0)
     cbar.set_ticks(tick_locs)
     cbar.set_ticklabels([int(x) for x in ticks])
 
     def update(val):
         """ Callback function when the slider is moved"""
-        # print(f"Slider moved! New timerange: {val[0]} - {val[1]}")
-
         for h in heatmaps:
-            h.update(val, cmap=cmap)
-
-        # print("Finished calculating new heatmaps.")
+            h.update(val)
 
         lower_limit_line.set_xdata([val[0], val[0]])
         upper_limit_line.set_xdata([val[1], val[1]])
 
         # Redraw the figure to ensure it updates
         fig.canvas.draw_idle()
-
 
     # register callback
     slider.on_changed(update)

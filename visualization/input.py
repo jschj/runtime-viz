@@ -1,6 +1,6 @@
 import json
 import zlib
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
     buffers = {}
-    print("Parsing input file and initiakizing buffers...")
+    print("Parsing input file and initializing buffers...")
 
     # read and parse input file
     with open(buffer_filepath, 'r') as inputfile:
@@ -29,6 +29,12 @@ def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
 
 
 def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti: TimeInformation):
+    """
+    :param buffers: BufferCollection with buffers. This function will register accesses to the corresponding buffer.
+    :param access_filepath: Filepath to zlib-compressed binary file containing access information.
+    :param ti: Time Info
+    :return:
+    """
     chunk_size: int = 1024  # 1 KiB
     line_width: int = 13  # the number of bytes representing a single access
     endianness: Literal['little', 'big'] = 'little'
@@ -36,7 +42,9 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
     # initialize histogram
     histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
-    def deserialize(data):
+    print("Reading and processing access information file...")
+
+    def process(data):
         assert len(data) == line_width
 
         # deserialize information from bytes
@@ -55,6 +63,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
         # TODO: error handling
         buffers[bufferid].add_access(timeframe_index=frame_index, index=index)
 
+
     with open(access_filepath, 'rb') as access_file:
         dco = zlib.decompressobj(wbits=zlib.MAX_WBITS | 32)  # automatic header detection
         buf = b''  # start with empty buffer
@@ -64,5 +73,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
                 buf = buf + access_file.read(chunk_size)
 
             decompressed_data = dco.decompress(buf, max_length=line_width)
-            deserialize(decompressed_data)
+            process(decompressed_data)
             buf = dco.unconsumed_tail
+
+    return histogram

@@ -5,29 +5,8 @@ import math
 from time_information import TimeInformation
 
 
-def _calc_heatmap_resolution(actual_res, max_res):
-    """
-    Calculates the heatmap resolution (hm_res).
-    Guarantees that: hm_res <= max_res and actual_res % hm_res == 0.
-
-    Problematic edge case: If actual_res is prime, hm_res == 1
-    """
-    if actual_res < max_res:
-        return actual_res
-
-    hm_res = max_res
-    for i in range(max_res, 0, -1):
-        if actual_res % i == 0:
-            hm_res = i
-            break
-
-    assert hm_res <= max_res
-    assert actual_res % hm_res == 0
-    return hm_res
-
-
 class Buffer:
-    MAX_RES = 200
+    MAX_RES = 100
 
     def __init__(self, details: dict):
         """ Initialize buffer using detail information from JSON """
@@ -50,9 +29,6 @@ class Buffer:
         self.hm_width = None
         self.hm_height = None
 
-        # heatmap entry with the most accesses (is updated in add_access)
-        self.highest = 0
-
         # quick sanity checking
         assert 0 <= self.height
         assert 0 <= self.width
@@ -60,12 +36,13 @@ class Buffer:
 
     def initialize_heatmap(self, ti: TimeInformation):
         # calculate heatmap dimension
-        self.hm_width = _calc_heatmap_resolution(self.width, Buffer.MAX_RES)
-        self.hm_height = _calc_heatmap_resolution(self.height, Buffer.MAX_RES)
-        print(f"Using a {self.hm_height}x{self.hm_width} heatmap for {self.height}x{self.width} buffer ({self.name}).")
+        self.hm_width = self._calc_heatmap_resolution(self.width, Buffer.MAX_RES)
+        self.hm_height = self._calc_heatmap_resolution(self.height, Buffer.MAX_RES)
         # stores how many buffer entries are represented by a single pixel in the heatmap
         self.downsampling_factor = (self.width // self.hm_width) * (self.height // self.hm_height)
-        print(f'self.downsampling_factor={self.downsampling_factor}')
+        print(f"Using a {self.hm_height}x{self.hm_width} heatmap for {self.height}x{self.width} buffer ({self.name}) "
+              f"-> downsampling factor: {self.downsampling_factor}")
+
 
         # create buffer for heatmap frames
         self.ti = ti
@@ -79,14 +56,33 @@ class Buffer:
         # calculate index in frame
         x = math.floor((x_index + 0.5) / self.width * self.hm_width)
         y = math.floor((y_index + 0.5) / self.height * self.hm_height)
+        assert x < self.hm_width
+        assert y < self.hm_height
 
         # update heatmap frame
         self.heatmap_frames[timeframe_index][x][y] = \
             self.heatmap_frames[timeframe_index][x][y] + 1
 
-        # updated self.highest
-        if self.heatmap_frames[timeframe_index][x][y] > self.highest:
-            self.highest = self.heatmap_frames[timeframe_index][x][y]
+    @staticmethod
+    def _calc_heatmap_resolution(actual_res, max_res):
+        """
+        Calculates the heatmap resolution (hm_res).
+        Guarantees that: hm_res <= max_res and actual_res % hm_res == 0.
+
+        Problematic edge case: If actual_res is prime, hm_res == 1
+        """
+        if actual_res < max_res:
+            return actual_res
+
+        hm_res = max_res
+        for i in range(max_res, 0, -1):
+            if actual_res % i == 0:
+                hm_res = i
+                break
+
+        assert hm_res <= max_res
+        assert actual_res % hm_res == 0
+        return hm_res
 
 
 BufferCollection = dict[int, Buffer]
