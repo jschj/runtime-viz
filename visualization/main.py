@@ -14,14 +14,17 @@ from heatmap import Heatmap
 import time_information
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f"Usage: {os.path.basename(__file__)} <path to input file (.json or .bson)>")
+    if len(sys.argv) != 3:
+        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file>")
         exit(255)
 
-    inputfilepath = sys.argv[1]
+    buffer_filepath = sys.argv[1]
+    access_filepath = sys.argv[2]
+
     # read input
-    buffers = input.read_input(inputfilepath)
+    buffers = input.init_buffers(buffer_filepath)
     ti = time_information.TimeInformation(buffers)
+    histogram = input.process_accesses(buffers, access_filepath, ti)
 
     # calculate size of output plots
     columns = 2
@@ -35,7 +38,6 @@ if __name__ == '__main__':
     # plot heatmaps for all buffers
     heatmaps = []
     i = 0
-    global_histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
     # largest entry in any heatmap (to determine colormap)
     max_number = 0
@@ -47,7 +49,6 @@ if __name__ == '__main__':
         if hm.highest > max_number:
             max_number = hm.highest
 
-        global_histogram = global_histogram + hm.get_local_histogram()
         heatmaps.append(hm)
 
     max_number = max_number + 1
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     end = ti.end_time
     if ti.duration % ti.timestep_size == 0:
         end = end + ti.timestep_size
-    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), global_histogram)
+    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), histogram)
     plt.xlim(ti.start_time - ti.duration // 20, ti.end_time + ti.duration // 20)
     plt.title("Access histogram")
     plt.xlabel("Time (ns)")

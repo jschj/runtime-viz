@@ -1,4 +1,3 @@
-bson
 numpy
 matplotlib
 tqdm

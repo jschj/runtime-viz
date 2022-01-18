@@ -9,29 +9,9 @@ from time_information import TimeInformation
 import matplotlib.patches as mpatches
 
 
-def _calc_resolution(actual_res, max_res):
-    """
-    Calculates the heatmap resolution (hm_res).
-    Guarantees that: hm_res <= max_res and actual_res % hm_res == 0.
-
-    Problematic edge case: If actual_res is prime, hm_res == 1
-    """
-    if actual_res < max_res:
-        return actual_res
-
-    hm_res = max_res
-    for i in range(max_res, 0, -1):
-        if actual_res % i == 0:
-            hm_res = i
-            break
-
-    assert hm_res <= max_res
-    assert actual_res % hm_res == 0
-    return hm_res
-
 
 class Heatmap:
-    MAX_RES = 200
+
 
     def __init__(self, b: buffer.Buffer, ti: TimeInformation, ax):
         """
