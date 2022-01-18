@@ -1,6 +1,6 @@
-import numpy as np
-
 import math
+
+import numpy as np
 
 from time_information import TimeInformation
 
@@ -42,7 +42,6 @@ class Buffer:
         self.downsampling_factor = (self.width // self.hm_width) * (self.height // self.hm_height)
         print(f"Using a {self.hm_height}x{self.hm_width} heatmap for {self.height}x{self.width} buffer ({self.name}) "
               f"-> downsampling factor: {self.downsampling_factor}")
-
 
         # create buffer for heatmap frames
         self.ti = ti

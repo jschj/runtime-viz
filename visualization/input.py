@@ -1,13 +1,11 @@
 import json
 import zlib
-from typing import Literal, Any
+from typing import Literal
 
 import numpy as np
 
 import buffer
 from time_information import TimeInformation
-
-from tqdm import tqdm
 
 
 def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
@@ -62,7 +60,6 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
         # register access in correct buffer
         # TODO: error handling
         buffers[bufferid].add_access(timeframe_index=frame_index, index=index)
-
 
     with open(access_filepath, 'rb') as access_file:
         dco = zlib.decompressobj(wbits=zlib.MAX_WBITS | 32)  # automatic header detection

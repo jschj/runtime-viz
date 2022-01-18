@@ -1,13 +1,9 @@
-import math
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 
 import buffer
-from time_information import TimeInformation
-import matplotlib.patches as mpatches
 
 
 class Heatmap:
@@ -26,7 +22,6 @@ class Heatmap:
         # this is only relevant if downsampling is active,
         # because a single pixel will represent more than one buffer entry
         self.prefix_sums = self.prefix_sums / self.buffer.downsampling_factor
-
 
         # convert single frames to prefix sums
         print(f"Calculating prefix sums of heatmaps for buffer {b.name}...")

@@ -1,6 +1,3 @@
-import zlib
-from typing import Literal
-
 TIME_RES = 50
 
 

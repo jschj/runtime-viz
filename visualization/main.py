@@ -1,21 +1,20 @@
 import math
-import sys
 import os
+import sys
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
-from matplotlib.ticker import ScalarFormatter
 from matplotlib.widgets import RangeSlider
 
 import input
-from heatmap import Heatmap
 import time_information
+from heatmap import Heatmap
 
 if __name__ == '__main__':
-    start_wclock = time.time() # for performance measurement
+    start_wclock = time.time()  # for performance measurement
     if len(sys.argv) != 5:
         print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file> <start time> <end time>")
         exit(255)
@@ -106,6 +105,7 @@ if __name__ == '__main__':
     cbar.set_ticks(tick_locs)
     cbar.set_ticklabels([int(x) for x in ticks])
 
+
     def update(val):
         """ Callback function when the slider is moved"""
         for h in heatmaps:
@@ -116,6 +116,7 @@ if __name__ == '__main__':
 
         # Redraw the figure to ensure it updates
         fig.canvas.draw_idle()
+
 
     # register callback
     slider.on_changed(update)
