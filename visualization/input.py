@@ -33,7 +33,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
     :param ti: Time Info
     :return:
     """
-    chunk_size: int = 1024  # 1 KiB
+    chunk_size: int = 16*1024  # 16 KiB
     line_width: int = 13  # the number of bytes representing a single access
     endianness: Literal['little', 'big'] = 'little'
 
@@ -69,8 +69,10 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
             if len(buf) < chunk_size:
                 buf = buf + access_file.read(chunk_size)
 
-            decompressed_data = dco.decompress(buf, max_length=line_width)
-            process(decompressed_data)
+            decompressed_data = dco.decompress(buf, max_length=line_width*(chunk_size // line_width))
+            for i in range(len(decompressed_data) // line_width):
+                offset = i * line_width
+                process(decompressed_data[offset:offset+13])
             buf = dco.unconsumed_tail
 
     return histogram
