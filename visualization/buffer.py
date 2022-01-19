@@ -53,14 +53,13 @@ class Buffer:
         y_index = index // self.width
 
         # calculate index in frame
-        x = math.floor((x_index + 0.5) / self.width * self.hm_width)
-        y = math.floor((y_index + 0.5) / self.height * self.hm_height)
+        x = int((x_index + 0.5) / self.width * self.hm_width)
+        y = int((y_index + 0.5) / self.height * self.hm_height)
         assert x < self.hm_width
         assert y < self.hm_height
 
         # update heatmap frame
-        self.heatmap_frames[timeframe_index][x][y] = \
-            self.heatmap_frames[timeframe_index][x][y] + 1
+        self.heatmap_frames[timeframe_index][x][y] += 1
 
     @staticmethod
     def _calc_heatmap_resolution(actual_res, max_res):

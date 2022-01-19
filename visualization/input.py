@@ -1,5 +1,6 @@
 import json
 import zlib
+import struct
 from typing import Literal
 
 import numpy as np
@@ -35,31 +36,11 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
     """
     chunk_size: int = 16*1024  # 16 KiB
     line_width: int = 13  # the number of bytes representing a single access
-    endianness: Literal['little', 'big'] = 'little'
 
     # initialize histogram
     histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
     print("Reading and processing access information file...")
-
-    def process(data):
-        assert len(data) == line_width
-
-        # deserialize information from bytes
-        bufferid = int.from_bytes(data[0:1], byteorder=endianness, signed=False)
-        timestamp = int.from_bytes(data[1:9], byteorder=endianness, signed=False)
-        index = int.from_bytes(data[9:13], byteorder=endianness, signed=False)
-
-        # calculate frame index (time domain)
-        relative_tp = timestamp - ti.start_time
-        frame_index = relative_tp // ti.timestep_size
-
-        # update histogram
-        histogram[frame_index] = histogram[frame_index] + 1
-
-        # register access in correct buffer
-        # TODO: error handling
-        buffers[bufferid].add_access(timeframe_index=frame_index, index=index)
 
     with open(access_filepath, 'rb') as access_file:
         dco = zlib.decompressobj(wbits=zlib.MAX_WBITS | 32)  # automatic header detection
@@ -70,9 +51,19 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
                 buf = buf + access_file.read(chunk_size)
 
             decompressed_data = dco.decompress(buf, max_length=line_width*(chunk_size // line_width))
-            for i in range(len(decompressed_data) // line_width):
-                offset = i * line_width
-                process(decompressed_data[offset:offset+13])
+            # unpack data from binary
+            for bufferid, timestamp, index in struct.iter_unpack("<BQL", decompressed_data):
+                # calculate frame index (time domain)
+                relative_tp = timestamp - ti.start_time
+                frame_index = relative_tp // ti.timestep_size
+
+                # update histogram
+                histogram[frame_index] += 1
+
+                # register access in correct buffer
+                # TODO: error handling
+                buffers[bufferid].add_access(timeframe_index=frame_index, index=index)
+
             buf = dco.unconsumed_tail
 
     return histogram
