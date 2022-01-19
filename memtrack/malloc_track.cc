@@ -255,7 +255,7 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
 }
 
 void device_buffer_tracker::find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
-        uint32_t ids[32], uint64_t indices[32]) const
+        uint32_t ids[32], uint64_t indices[32])
 {
     std::unique_lock<std::mutex> lk(mut);
 
@@ -263,8 +263,13 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
         if (!addresses[i])
             continue;
 
-        for (const auto& it : user_buffers) {
+        for (auto& it : user_buffers) {
             if (it.range.in_range(addresses[i]) && it.was_active_at(when)) {
+                if (when < it.first_access_time)
+                    it.first_access_time = when;
+                else if (when > it.last_access_time)
+                    it.last_access_time = when;
+                
                 ids[i] = it.id;
                 //indices[i] = (addresses[i] - it.range.from) / it.second.get_elem_type_size();
                 indices[i] = it.address_to_index(addresses[i]);

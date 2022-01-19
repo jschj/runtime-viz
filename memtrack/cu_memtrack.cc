@@ -108,6 +108,12 @@ namespace memtrack
             enc.key("type_name");
             enc.string_value(entry_pair.get_elem_type_name());
 
+            enc.key("first_access_time");
+            enc.uint64_value(entry_pair.first_access_time.time_since_epoch().count());
+
+            enc.key("last_access_time");
+            enc.uint64_value(entry_pair.last_access_time.time_since_epoch().count());
+
             enc.end_object();
         }
 

@@ -61,6 +61,10 @@ struct device_buffer
     // can be given by user
     std::string name_tag;
 
+    // changed on device_buffer_tracker::find_associated_buffers()
+    util::time_point first_access_time = util::time_point::max();
+    util::time_point last_access_time = util::time_point::min();
+
     union
     {
         cuMemAlloc_params cuMemAlloc;
@@ -143,7 +147,7 @@ public:
     void user_track_buffer(void *location, const std::string& name, device_buffer::element_type type);
 
     void find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
-        uint32_t ids[32], uint64_t indices[32]) const;
+        uint32_t ids[32], uint64_t indices[32]);
 
     std::string get_buffer_info_string() const;
 
