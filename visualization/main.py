@@ -9,9 +9,9 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 from matplotlib.widgets import RangeSlider
 
+import heatmap
 import input
 import time_information
-import heatmap
 
 if __name__ == '__main__':
     start_wclock = time.time()  # for performance measurement

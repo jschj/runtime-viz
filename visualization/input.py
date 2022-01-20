@@ -1,6 +1,6 @@
 import json
-import zlib
 import struct
+import zlib
 
 import numpy as np
 
@@ -33,7 +33,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
     :param ti: Time Info
     :return:
     """
-    chunk_size: int = 16*1024  # 16 KiB
+    chunk_size: int = 16 * 1024  # 16 KiB
     line_width: int = 13  # the number of bytes representing a single access
 
     # initialize histogram
@@ -49,7 +49,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
             if len(buf) < chunk_size:
                 buf = buf + access_file.read(chunk_size)
 
-            decompressed_data = dco.decompress(buf, max_length=line_width*(chunk_size // line_width))
+            decompressed_data = dco.decompress(buf, max_length=line_width * (chunk_size // line_width))
             # unpack data from binary
             for bufferid, timestamp, index in struct.iter_unpack("<BQL", decompressed_data):
                 # calculate frame index (time domain)
