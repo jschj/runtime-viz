@@ -1,12 +1,11 @@
 import json
 import zlib
 import struct
-from typing import Literal
 
 import numpy as np
 
 import buffer
-from time_information import TimeInformation
+import time_information
 
 
 def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
@@ -27,7 +26,7 @@ def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
     return buffers
 
 
-def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti: TimeInformation):
+def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti: time_information.TimeInformation):
     """
     :param buffers: BufferCollection with buffers. This function will register accesses to the corresponding buffer.
     :param access_filepath: Filepath to zlib-compressed binary file containing access information.

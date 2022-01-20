@@ -11,22 +11,22 @@ from matplotlib.widgets import RangeSlider
 
 import input
 import time_information
-from heatmap import Heatmap
+import heatmap
 
 if __name__ == '__main__':
     start_wclock = time.time()  # for performance measurement
-    if len(sys.argv) != 5:
-        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file> <start time> <end time>")
+    if len(sys.argv) != 3:
+        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file>")
         exit(255)
 
     buffer_filepath = sys.argv[1]
     access_filepath = sys.argv[2]
-    start_time = int(sys.argv[3])
-    end_time = int(sys.argv[4])
 
     # read input
     buffers = input.init_buffers(buffer_filepath)
-    ti = time_information.TimeInformation(start_time, end_time)
+    earliest_access_time = min([b.first_access_time for _, b in buffers.items()])
+    latest_access_time = max([b.last_access_time for _, b in buffers.items()])
+    ti = time_information.TimeInformation(earliest_access_time, latest_access_time)
     for _, b in buffers.items():
         b.initialize_heatmap(ti)
     histogram = input.process_accesses(buffers, access_filepath, ti)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # largest entry in any heatmap (to determine colormap)
     for i, (_, b) in enumerate(buffers.items()):
         axis = plt.subplot(rows, columns, i + 1)
-        heatmaps.append(Heatmap(b, axis))
+        heatmaps.append(heatmap.Heatmap(b, axis))
 
     highest = max([hm.get_maximum() for hm in heatmaps])
 

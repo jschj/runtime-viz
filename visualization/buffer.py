@@ -1,8 +1,6 @@
-import math
-
 import numpy as np
 
-from time_information import TimeInformation
+import time_information
 
 
 class Buffer:
@@ -14,7 +12,9 @@ class Buffer:
         self.name = details["name"]
         self.type_name = details["type_name"]
         self.height = details['height']
-        self.dimensionality = details["type"]
+        self.dimensionality = details["type"].lower()
+        self.first_access_time = details["first_access_time"]
+        self.last_access_time = details["last_access_time"]
 
         if self.dimensionality == "pitched":
             self.width = details['width']
@@ -32,9 +32,11 @@ class Buffer:
         # quick sanity checking
         assert 0 <= self.height
         assert 0 <= self.width
+        assert self.width <= self.pitch
+        assert self.dimensionality in ["plain", "pitched"]
         assert self.name and self.name.strip()
 
-    def initialize_heatmap(self, ti: TimeInformation):
+    def initialize_heatmap(self, ti: time_information.TimeInformation):
         # calculate heatmap dimension
         self.hm_width = self._calc_heatmap_resolution(self.width, Buffer.MAX_RES)
         self.hm_height = self._calc_heatmap_resolution(self.height, Buffer.MAX_RES)

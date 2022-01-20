@@ -2,7 +2,7 @@ TIME_RES = 50
 
 
 class TimeInformation:
-    def __init__(self, start_time: int, end_time: int):
+    def __init__(self, start_time, end_time):
         self.start_time = start_time
         self.end_time = end_time
         self.duration = self.end_time - self.start_time
