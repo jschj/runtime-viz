@@ -8,7 +8,8 @@ int main(int argc, char **argv)
 {
 	std::cout << "PMPP Hello World!" << std::endl;
 
-	pmpp::load(argc >= 2 && std::string(argv[1]) == std::string("random"));
+	int n = argc >= 2 ? std::stoi(argv[1]) : -1;
+	pmpp::load(n);
 
 	print_cuda_devices();
 	std::cout << std::setprecision(10);

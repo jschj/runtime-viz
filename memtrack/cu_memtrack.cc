@@ -4,31 +4,25 @@
 #include <limits>
 #include <atomic>
 
-#include "json.h"
+#include <jsoncons/json.hpp>
+#include <jsoncons_ext/jsonpath/jsonpath.hpp>
+#include <jsoncons_ext/bson/bson.hpp>
+
+#include "access_compression.h"
+#include "malloc_track.h"
 
 
 namespace memtrack
 {
-    std::unique_ptr<streaming_bson_encoder> bson_encoder;
+    std::string json_path;
     int64_t device_host_time_difference;
+    std::unique_ptr<access_compression> acc_comp;
 
 
-    void cu_memtrack_init(const std::string& json_dump_file, const std::string& acc_dump_file)
+    void cu_memtrack_init(const std::string& json_file_path, const std::string& access_dump_file)
     {
-        bson_encoder = std::make_unique<streaming_bson_encoder>(json_dump_file, acc_dump_file);
-    }
-
-    void cu_memtrack_begin()
-    {
-        std::cout << "beginning bson" << std::endl;
-        bson_encoder->begin();
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().begin_object();
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().key("accesses");
-        std::cout << "done" << std::endl;
-        bson_encoder->get_encoder().begin_array();
-        std::cout << "done" << std::endl;
+        json_path = json_file_path;
+        acc_comp = std::make_unique<access_compression>(access_dump_file);
     }
 
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params)
@@ -51,34 +45,31 @@ namespace memtrack
         };
         tracker().find_associated_buffers(when, access.addrs, ids, indices);
 
-        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
-
         for (uint32_t i = 0; i < 32; ++i) {
             // NULL means no access!    
             if (!access.addrs[i])
-                continue;            
+                continue;
 
-            //bson_encoder->acc_file << access.when << ids[i] << indices[i];
+            access_compression::raw_buffer_access acc{
+                .buffer_id = static_cast<uint8_t>(ids[i]),
+                .time_point = access.when - device_host_time_difference,
+                .index = static_cast<uint32_t>(indices[i]),
+            };
 
-            enc.begin_object();
-            enc.key("t");
-            // hack to circumvent jsoncons moronic bound checking
-            //enc.uint64_value(access.when, jsoncons::semantic_tag::epoch_nano);
-            enc.int64_value(static_cast<int64_t>(access.when - device_host_time_difference));
-            enc.key("b");
-            enc.uint64_value(ids[i]);
-            enc.key("i");
-            // TODO: causes error if first bit of address is 1
-            enc.uint64_value(indices[i]);
-            enc.end_object();
+            acc_comp->track_access(acc);
         }
     }
 
-    void cu_memtrack_end()
+    void cu_memtrack_dump_buffers()
     {
-        jsoncons::bson::bson_stream_encoder& enc = bson_encoder->get_encoder();
+        std::ofstream stream(json_path, std::ios_base::out);
 
-        enc.end_array();
+        if (!stream.is_open())
+            throw std::runtime_error("Could not open JSON file!");
+
+        jsoncons::json_stream_encoder enc(stream);
+
+        enc.begin_object();
         enc.key("buffers");
 
         enc.begin_array();
@@ -117,6 +108,12 @@ namespace memtrack
             enc.key("type_name");
             enc.string_value(entry_pair.get_elem_type_name());
 
+            enc.key("first_access_time");
+            enc.uint64_value(entry_pair.first_access_time.time_since_epoch().count());
+
+            enc.key("last_access_time");
+            enc.uint64_value(entry_pair.last_access_time.time_since_epoch().count());
+
             enc.end_object();
         }
 
@@ -124,8 +121,6 @@ namespace memtrack
 
         enc.end_object();
         enc.flush();
-
-        bson_encoder.reset();
     }
 
     void cu_memtrack_set_time_difference(int64_t delta)
