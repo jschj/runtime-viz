@@ -1,14 +1,10 @@
-from typing import Tuple
-
-import buffer
-
-TIME_RES = 100
+TIME_RES = 50
 
 
 class TimeInformation:
-    def __init__(self, buffers: buffer.BufferCollection):
-        self.start_time = min([min(b.accesses.keys()) for b in buffers.values()])
-        self.end_time = max([max(b.accesses.keys()) for b in buffers.values()])
+    def __init__(self, start_time, end_time):
+        self.start_time = start_time
+        self.end_time = end_time
         self.duration = self.end_time - self.start_time
         self.start_time = self.start_time - self.duration // 20
         self.end_time = self.end_time + self.duration // 20

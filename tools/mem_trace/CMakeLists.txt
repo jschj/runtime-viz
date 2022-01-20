@@ -39,3 +39,5 @@ target_include_directories(mem_trace PRIVATE
 
 # load global config
 #include (${CMAKE_SOURCE_DIR} ../../../build/cmake/config.cmake)
+
+target_link_libraries(mem_trace ${CMAKE_SOURCE_DIR}/libs/zlib/libz.so)

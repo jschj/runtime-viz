@@ -200,6 +200,9 @@ void device_buffer_tracker::on_malloc(nvbit_api_cuda_t cbid, void *params)
     device_buffer buf(cbid, params, next_buffer_id++);
     std::unique_lock<std::mutex> lk(mut);
     active_buffers.emplace(reinterpret_cast<void *>(buf.range.from), buf);
+
+    if (next_buffer_id == 256)
+        std::cerr << "WARNING: Only buffer ids up to 255 are supported in the dump file format!" << std::endl;
 }
 
 void device_buffer_tracker::on_free(void *location)
@@ -252,7 +255,7 @@ void device_buffer_tracker::user_track_buffer(void *location, const std::string&
 }
 
 void device_buffer_tracker::find_associated_buffers(util::time_point when, const cuda_address_t addresses[32],
-        uint32_t ids[32], uint64_t indices[32]) const
+        uint32_t ids[32], uint64_t indices[32])
 {
     std::unique_lock<std::mutex> lk(mut);
 
@@ -260,8 +263,13 @@ void device_buffer_tracker::find_associated_buffers(util::time_point when, const
         if (!addresses[i])
             continue;
 
-        for (const auto& it : user_buffers) {
+        for (auto& it : user_buffers) {
             if (it.range.in_range(addresses[i]) && it.was_active_at(when)) {
+                if (when < it.first_access_time)
+                    it.first_access_time = when;
+                else if (when > it.last_access_time)
+                    it.last_access_time = when;
+                
                 ids[i] = it.id;
                 //indices[i] = (addresses[i] - it.range.from) / it.second.get_elem_type_size();
                 indices[i] = it.address_to_index(addresses[i]);
