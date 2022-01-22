@@ -6,6 +6,8 @@
 
 #include <assert.h>
 
+#include <memtrack/memtrack.h>
+
 void filtering(const char *imgfile, int ks)
 {
     if(ks > MAX_FILTER_SIZE) {
@@ -36,6 +38,12 @@ void filtering(const char *imgfile, int ks)
     }
 
     image_gpu tmp_gpu(vanilla_image_cpu.width, vanilla_image_cpu.height);
+
+    // track kernel buffers
+    TRACK_BUFFER(vanilla_image_gpu.data, "vanilla");
+    TRACK_BUFFER(tmp_gpu.data, "temporary");
+    TRACK_BUFFER(output_tmp_gpu.data, "result");
+    TRACK_BUFFER(kernel_gpu.data, "kernel");
 
 	// === Task 2 ===
 	// Blur image on GPU (Global memory)

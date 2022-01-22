@@ -153,8 +153,7 @@ void instrument_function_if_needed(CUcontext ctx, CUfunction func) {
         /* iterate on all the static instructions in the function */
         for (auto instr : instrs) {
             if (cnt < instr_begin_interval || cnt >= instr_end_interval ||
-                instr->getMemorySpace() == InstrType::MemorySpace::NONE ||
-                instr->getMemorySpace() == InstrType::MemorySpace::CONSTANT) {
+                instr->getMemorySpace() != InstrType::MemorySpace::GLOBAL) {
                 cnt++;
                 continue;
             }
@@ -283,6 +282,8 @@ void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
 
             // probe device time
             memtrack::cu_memtrack_set_time_difference(probe_global_time_difference());
+            // track new kernel
+            memtrack::cu_memtrack_attach_to_kernel(func_name);
 
             //std::cout << "Press return key to continue";
 			//std::cin.get();
