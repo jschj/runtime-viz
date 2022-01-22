@@ -27,14 +27,18 @@ namespace pmpp {
 	{
 		return std::uniform_int_distribution<int>(min, max)(re);
 	}
-	inline void load(bool random = false)
+	inline void load(int n)
 	{
 		float m_3x3[] = { 1, 2, 3, 4, 5.1245, 6, 7, 8, 9 };
 		float n_3x3[] = { 10, 2.124563, 4, 6, 3.12467547848, 4, 7, 1, 10 };
-		if (random) {
-			M_WIDTH = rand(100, 1000);
-			M_HEIGHT = rand(100, 1000);
-			N_WIDTH = rand(100, 1000);
+		if (n > 0) {
+			//M_WIDTH = rand(100, 1000);
+			//M_HEIGHT = rand(100, 1000);
+			//N_WIDTH = rand(100, 1000);
+
+			M_WIDTH = n;
+			M_HEIGHT = n;
+			N_WIDTH = n;
 		} else {
 			M_WIDTH = M_HEIGHT = N_WIDTH = 3;
 		}

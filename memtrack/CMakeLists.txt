@@ -11,9 +11,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 add_library(memtrack SHARED
     malloc_track.cc
-    json.cc
+    #json.cc
     cu_memtrack.cc
     util.cc
+    access_compression.cc
 )
 
 target_compile_features(memtrack PRIVATE cxx_std_17)
@@ -25,8 +26,11 @@ target_include_directories(memtrack PUBLIC
     ${CMAKE_SOURCE_DIR}
     # header only library
     "${CMAKE_SOURCE_DIR}/jsoncons/include/"
+    ${CMAKE_SOURCE_DIR}/libs/zlib/
 )
 
 #set_target_properties(memtrack PROPERTIES
 #    PUBLIC_HEADER memtrack.h
 #)
+
+target_link_libraries(memtrack ${CMAKE_SOURCE_DIR}/libs/zlib/libz.so)

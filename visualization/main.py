@@ -1,27 +1,35 @@
 import math
-import sys
 import os
+import sys
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
-from matplotlib.ticker import ScalarFormatter
 from matplotlib.widgets import RangeSlider
 
+import heatmap
 import input
-from heatmap import Heatmap
 import time_information
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f"Usage: {os.path.basename(__file__)} <path to input file (.json or .bson)>")
+    start_wclock = time.time()  # for performance measurement
+    if len(sys.argv) != 3:
+        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file>")
         exit(255)
 
-    inputfilepath = sys.argv[1]
+    buffer_filepath = sys.argv[1]
+    access_filepath = sys.argv[2]
+
     # read input
-    buffers = input.read_input(inputfilepath)
-    ti = time_information.TimeInformation(buffers)
+    buffers = input.init_buffers(buffer_filepath)
+    earliest_access_time = min([b.first_access_time for _, b in buffers.items()])
+    latest_access_time = max([b.last_access_time for _, b in buffers.items()])
+    ti = time_information.TimeInformation(earliest_access_time, latest_access_time)
+    for _, b in buffers.items():
+        b.initialize_heatmap(ti)
+    histogram = input.process_accesses(buffers, access_filepath, ti)
 
     # calculate size of output plots
     columns = 2
@@ -35,32 +43,23 @@ if __name__ == '__main__':
     # plot heatmaps for all buffers
     heatmaps = []
     i = 0
-    global_histogram = np.zeros(shape=(ti.timestep_count + 1,))
 
     # largest entry in any heatmap (to determine colormap)
-    max_number = 0
     for i, (_, b) in enumerate(buffers.items()):
         axis = plt.subplot(rows, columns, i + 1)
-        hm = Heatmap(b, ti, axis)
+        heatmaps.append(heatmap.Heatmap(b, axis))
 
-        # update hightest
-        if hm.highest > max_number:
-            max_number = hm.highest
-
-        global_histogram = global_histogram + hm.get_local_histogram()
-        heatmaps.append(hm)
-
-    max_number = max_number + 1
+    highest = max([hm.get_maximum() for hm in heatmaps])
 
     # get discrete colormap
-    cmap = plt.get_cmap('copper', max_number)
+    cmap = plt.get_cmap('copper', highest)
 
     # apply colormap
     for hm in heatmaps:
         hm.im.set_cmap(cmap=cmap)
-        hm.im.set(clim=(0, max_number))
+        hm.im.set(clim=(0, highest))
 
-    print("Show visualization window...")
+    print(f"Setup took {time.time() - start_wclock:.2f} seconds. Showing visualization window...")
 
     # hide unused plots
     i = i + 1
@@ -73,7 +72,7 @@ if __name__ == '__main__':
     end = ti.end_time
     if ti.duration % ti.timestep_size == 0:
         end = end + ti.timestep_size
-    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), global_histogram)
+    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), histogram)
     plt.xlim(ti.start_time - ti.duration // 20, ti.end_time + ti.duration // 20)
     plt.title("Access histogram")
     plt.xlabel("Time (ns)")
@@ -92,7 +91,7 @@ if __name__ == '__main__':
     upper_limit_line = overview.axvline(slider.val[1], color='k')
 
     # create color legend
-    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, max_number), cmap=cmap),
+    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, highest), cmap=cmap),
                         ax=overview,
                         orientation="horizontal",
                         location="top",
@@ -100,20 +99,17 @@ if __name__ == '__main__':
                         label="Color legend"
                         )
 
-    number_of_ticks = min(4, max_number)
-    ticks = np.linspace(0, max_number, num=int(number_of_ticks), endpoint=True)
-    tick_locs = (ticks + 0.5)
+    number_of_ticks = min(4, highest)
+    ticks = np.linspace(0, highest, num=int(number_of_ticks), endpoint=True)
+    tick_locs = (ticks + 0.0)
     cbar.set_ticks(tick_locs)
     cbar.set_ticklabels([int(x) for x in ticks])
 
+
     def update(val):
         """ Callback function when the slider is moved"""
-        # print(f"Slider moved! New timerange: {val[0]} - {val[1]}")
-
         for h in heatmaps:
-            h.update(val, cmap=cmap)
-
-        # print("Finished calculating new heatmaps.")
+            h.update(val)
 
         lower_limit_line.set_xdata([val[0], val[0]])
         upper_limit_line.set_xdata([val[1], val[1]])
