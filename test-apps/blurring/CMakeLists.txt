@@ -22,3 +22,5 @@ set_target_properties(gauss_filter PROPERTIES CUDA_ARCHITECTURES "75")
 target_compile_options(gauss_filter PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
 	-lineinfo
 	>)
+
+target_link_libraries(gauss_filter memtrack)

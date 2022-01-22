@@ -29,36 +29,39 @@ void filtering(const char *imgfile, int ks)
 	// Blur image on CPU
     {
         image_cpu blurred_cpu(vanilla_image_cpu.width, vanilla_image_cpu.height);
-        conv_h_cpu(blurred_cpu, vanilla_image_cpu, kernel_cpu);
-        conv_v_cpu(blurred_cpu, vanilla_image_cpu, kernel_cpu);
+        image_cpu tmp(vanilla_image_cpu.width, vanilla_image_cpu.height);
+        conv_h_cpu(tmp, vanilla_image_cpu, kernel_cpu);
+        conv_v_cpu(blurred_cpu, tmp, kernel_cpu);
         blurred_cpu.save("out_cpu.ppm");
     }
 
+    image_gpu tmp_gpu(vanilla_image_cpu.width, vanilla_image_cpu.height);
+
 	// === Task 2 ===
 	// Blur image on GPU (Global memory)
-    conv_h_gpu_gmem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
-    conv_v_gpu_gmem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_h_gpu_gmem(tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_v_gpu_gmem(output_tmp_gpu, tmp_gpu, kernel_gpu);
     output_tmp_cpu.download(output_tmp_gpu);
     output_tmp_cpu.save("out_gpu_gmem.ppm");
 
 	// === Task 3 ===
 	// Blur image on GPU (Shared memory)
-    conv_h_gpu_smem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
-    conv_v_gpu_smem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_h_gpu_smem(tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_v_gpu_smem(output_tmp_gpu, tmp_gpu, kernel_gpu);
     output_tmp_cpu.download(output_tmp_gpu);
     output_tmp_cpu.save("out_gpu_smem.ppm");
 
 	// === Task 4 ===
 	// Blur image on GPU (Constant memory)
-    conv_h_gpu_cmem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
-    conv_v_gpu_cmem(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_h_gpu_cmem(tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_v_gpu_cmem(output_tmp_gpu, tmp_gpu, kernel_gpu);
     output_tmp_cpu.download(output_tmp_gpu);
     output_tmp_cpu.save("out_gpu_cmem.ppm");
 
 	// === Task 5 ===
 	// Blur image on GPU (all memory types)
-    conv_h_gpu_all(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
-    conv_v_gpu_all(output_tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_h_gpu_all(tmp_gpu, vanilla_image_gpu, kernel_gpu);
+    conv_v_gpu_all(output_tmp_gpu, tmp_gpu, kernel_gpu);
     output_tmp_cpu.download(output_tmp_gpu);
     output_tmp_cpu.save("out_gpu_all.ppm");
 }
