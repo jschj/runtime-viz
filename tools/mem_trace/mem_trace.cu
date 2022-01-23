@@ -82,6 +82,7 @@ bool skip_callback_flag = false;
 uint32_t instr_begin_interval = 0;
 uint32_t instr_end_interval = UINT32_MAX;
 int verbose = 0;
+int only_writes = 0;
 
 /* opcode to id map and reverse map  */
 std::map<std::string, int> opcode_to_id_map;
@@ -99,6 +100,7 @@ void nvbit_at_init() {
         instr_end_interval, "INSTR_END", UINT32_MAX,
         "End of the instruction interval where to apply instrumentation");
     GET_VAR_INT(verbose, "TOOL_VERBOSE", 0, "Enable verbosity inside the tool");
+    GET_VAR_INT(only_writes, "ONLY_WRITES", 0, "Only track write memory accesses");
     std::string pad(100, '-');
     printf("%s\n", pad.c_str());
 
@@ -153,7 +155,8 @@ void instrument_function_if_needed(CUcontext ctx, CUfunction func) {
         /* iterate on all the static instructions in the function */
         for (auto instr : instrs) {
             if (cnt < instr_begin_interval || cnt >= instr_end_interval ||
-                instr->getMemorySpace() != InstrType::MemorySpace::GLOBAL) {
+                instr->getMemorySpace() != InstrType::MemorySpace::GLOBAL ||
+                (only_writes && !instr->isStore())) {
                 cnt++;
                 continue;
             }
