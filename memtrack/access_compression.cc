@@ -11,8 +11,10 @@ access_compression::~access_compression()
 
 void access_compression::attach_to_kernel(const std::string& kernel_name)
 {
-    std::string path = kernel_name + ".accesses.bin";
-    gz_file = gzopen(kernel_name.c_str(), "w");
+    std::string::size_type first_bracket = kernel_name.find_first_of('(');
+    std::string path = kernel_name.substr(0, first_bracket) + ".accesses.bin";
+
+    gz_file = gzopen(path.c_str(), "w");
 
     if (!gz_file)
         throw std::runtime_error("Could not open dump file!");
