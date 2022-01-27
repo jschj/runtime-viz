@@ -23,8 +23,6 @@ bool is_malloc_call(nvbit_api_cuda_t cbid);
 bool is_free_call(nvbit_api_cuda_t cbid);
 void *get_free_address(nvbit_api_cuda_t cbid, void *params);
 
-bool is_shared_memory(cuda_address_t address);
-
 struct device_buffer_range
 {
     cuda_address_t from;

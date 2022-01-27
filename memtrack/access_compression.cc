@@ -6,13 +6,17 @@ namespace memtrack
 
 access_compression::~access_compression()
 {
-    gzclose(gz_file);
+    if (gz_file)
+        gzclose(gz_file);
 }
 
 void access_compression::attach_to_kernel(const std::string& kernel_name)
 {
     std::string::size_type first_bracket = kernel_name.find_first_of('(');
     std::string path = kernel_name.substr(0, first_bracket) + ".accesses.bin";
+
+    if (gz_file)
+        gzclose(gz_file);
 
     gz_file = gzopen(path.c_str(), "w");
 

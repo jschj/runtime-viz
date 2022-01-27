@@ -67,16 +67,6 @@ void *get_free_address(nvbit_api_cuda_t cbid, void *params)
     return reinterpret_cast<void *>(free_address);
 }
 
-bool is_shared_memory(cuda_address_t address)
-{
-    static cuda_address_t shared_base = 0;
-
-    if (!shared_base) {
-        
-    }
-
-}
-
 device_buffer::device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id)
 {
     malloc_time = util::now();
