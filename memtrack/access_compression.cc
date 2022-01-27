@@ -6,6 +6,8 @@ namespace memtrack
 
 access_compression::~access_compression()
 {
+    //asm("INT3");
+
     if (gz_file)
         gzclose(gz_file);
 }
