@@ -16,12 +16,12 @@
 namespace memtrack
 {
 
+typedef uint64_t cuda_address_t;
+
 // exported utility functions
 bool is_malloc_call(nvbit_api_cuda_t cbid);
 bool is_free_call(nvbit_api_cuda_t cbid);
 void *get_free_address(nvbit_api_cuda_t cbid, void *params);
-
-typedef uint64_t cuda_address_t;
 
 struct device_buffer_range
 {
@@ -95,7 +95,9 @@ struct device_buffer
         type_float,
         type_double,
         type_int32,
-        type_int64
+        type_int64,
+        type_uint32,
+        type_uint64
     } type;
 
     device_buffer(nvbit_api_cuda_t cbid, void *params, uint32_t buffer_id) noexcept(false);

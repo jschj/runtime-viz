@@ -16,13 +16,15 @@ namespace memtrack
 {
     std::string json_path;
     int64_t device_host_time_difference;
-    std::unique_ptr<access_compression> acc_comp;
+    // FIX: All programs which links this library call the destructor on the same global object. This causes the destructor to be called
+    // multiple times on the same object. This shared pointer is a hack to prevent this problem.
+    std::shared_ptr<access_compression> acc_comp;
 
 
     void cu_memtrack_init(const std::string& json_file_path, const std::string& access_dump_file)
     {
         json_path = json_file_path;
-        acc_comp = std::make_unique<access_compression>(access_dump_file);
+        acc_comp = std::make_shared<access_compression>();
     }
 
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params)
@@ -119,6 +121,14 @@ namespace memtrack
 
         enc.end_array();
 
+        enc.key("access_files");
+        enc.begin_array();
+
+        for (const std::string& file_name : acc_comp->get_tracked_file_names())
+            enc.string_value(file_name);
+
+        enc.end_array();
+
         enc.end_object();
         enc.flush();
     }
@@ -126,5 +136,10 @@ namespace memtrack
     void cu_memtrack_set_time_difference(int64_t delta)
     {
         device_host_time_difference = delta;
+    }
+
+    void cu_memtrack_attach_to_kernel(const std::string& kernel_name)
+    {
+        acc_comp->attach_to_kernel(kernel_name);
     }
 }

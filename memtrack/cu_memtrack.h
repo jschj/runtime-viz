@@ -24,4 +24,5 @@ namespace memtrack
     void cu_memtrack_access(const mem_access_t& access);
     void cu_memtrack_dump_buffers();
     void cu_memtrack_set_time_difference(int64_t delta);
+    void cu_memtrack_attach_to_kernel(const std::string& kernel_name);
 }

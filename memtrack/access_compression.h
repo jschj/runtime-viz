@@ -19,11 +19,13 @@ public:
         uint32_t index;
     } __attribute__((packed));
 private:
-    gzFile gz_file;
+    gzFile gz_file = nullptr;
+    std::vector<std::string> file_names;
 public:
-    access_compression(const std::string& target_file_path);
     ~access_compression();
+    void attach_to_kernel(const std::string& kernel_name);
     void track_access(const raw_buffer_access& access);
+    std::vector<std::string> get_tracked_file_names() const;
 };
 
 } // namespace memtrack

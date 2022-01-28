@@ -145,6 +145,8 @@ size_t device_buffer::get_elem_type_size() const noexcept
         case type_double: return sizeof(double);
         case type_int32: return sizeof(int32_t);
         case type_int64: return sizeof(int64_t);
+        case type_uint32: return sizeof(uint32_t);
+        case type_uint64: return sizeof(uint64_t);
         default: return sizeof(char);
     }
 }
@@ -156,6 +158,8 @@ std::string device_buffer::get_elem_type_name() const
         case type_double: return "t_double";
         case type_int32: return "t_int32";
         case type_int64: return "t_int64";
+        case type_uint32: return "t_uint32";
+        case type_uint64: return "t_uint64";
         default: return "t_char";
     }
 }
@@ -337,4 +341,28 @@ template <>
 void TRACK_BUFFER<double>(double *location, const char *name)
 {
     memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_double);
+}
+
+template <>
+void TRACK_BUFFER<int32_t>(int32_t *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_int32);
+}
+
+template <>
+void TRACK_BUFFER<int64_t>(int64_t *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_int64);
+}
+
+template <>
+void TRACK_BUFFER<uint32_t>(uint32_t *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_uint32);
+}
+
+template <>
+void TRACK_BUFFER<uint64_t>(uint64_t *location, const char *name)
+{
+    memtrack::track_buffer_types(location, name, memtrack::device_buffer::element_type::type_uint64);
 }
