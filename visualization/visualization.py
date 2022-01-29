@@ -103,5 +103,3 @@ class Visualization:
 
         # show plot window
         mpl.pyplot.show()
-
-        print("Goodbye!")

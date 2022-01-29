@@ -1,4 +1,5 @@
 import json
+import os.path
 import struct
 import zlib
 from typing import Tuple
@@ -37,7 +38,10 @@ def init_buffers_file(buffer_filepath: str) -> Tuple[buffer.BufferCollection, st
     return buffers, access_files
 
 
-def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti: time_information.TimeInformation):
+def process_accesses(buffers: buffer.BufferCollection,
+                     access_filepath: str,
+                     ti: time_information.TimeInformation,
+                     histogram: np.ndarray):
     """
     :param buffers: BufferCollection with buffers. This function will register accesses to the corresponding buffer.
     :param access_filepath: Filepath to zlib-compressed binary file containing access information.
@@ -47,10 +51,7 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
     chunk_size: int = 16 * 1024  # 16 KiB
     line_width: int = 13  # the number of bytes representing a single access
 
-    # initialize histogram
-    histogram = np.zeros(shape=(ti.timestep_count + 1,))
-
-    print("Reading and processing access information file...")
+    print(f"Reading and processing access information file {os.path.basename(access_filepath)}...")
 
     with open(access_filepath, 'rb') as access_file:
         dco = zlib.decompressobj(wbits=zlib.MAX_WBITS | 32)  # automatic header detection
@@ -75,5 +76,3 @@ def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti:
                 buffers[bufferid].add_access(timeframe_index=frame_index, index=index)
 
             buf = dco.unconsumed_tail
-
-    return histogram
