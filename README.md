@@ -14,9 +14,11 @@ Options:
 - `TOOL_VERBOSE=1` prints all kind of information
 - `ONLY_WRITES=1` only records memory accesses that perform a write operation
 
+Executing this will generate a bunch of `*.accesses.bin` and a `buffers.json` file. `*.accesses.bin` contains the raw access data for each kernel. Calling the same kernel multiple times overwrites the old file, so this should be avoided. `buffers.json` contains all the buffer information. An interactive visualization can then by made by calling `python visualization/main.py buffers.json my_kernel.accesses.bin`.
+
 ## Compiling
 
-First make sure that the submodules _jsoncons_ and _zlib_ are pulled. The build _zlib_ by executing `make zlib` in the root directory. Next build _memtrack_ and _mem_trace_ by executing:
+First make sure that the submodules _jsoncons_ and _zlib_ are pulled. Then build _zlib_ by executing `make zlib` in the root directory. Next build _memtrack_ and _mem_trace_ by executing:
 
 ```
 make build
@@ -27,5 +29,16 @@ make
 
 This will generate `libmem_trace.so`.
 
-## A Working Example
+## Integrating a Custom Project
 
+1. Create a directory in `test-apps` for your application.
+2. In the accompanying `CMakeLists.txt` add the line `target_link_libraries(name_to_target memtrack)`.
+3. In the root directory `CMakeLists.txt` add the line `add_subdirectory(${CMAKE_SOURCE_DIR}/test-apps/name_of_app)`.
+
+Then `cd` into the `build` directory and excute:
+```
+cmake ..
+make
+```
+
+This should create an executable in `build/test-apps/name_of_app`.
