@@ -1,6 +1,7 @@
 import json
 import struct
 import zlib
+from typing import Tuple
 
 import numpy as np
 
@@ -8,7 +9,14 @@ import buffer
 import time_information
 
 
-def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
+def init_buffers_file(buffer_filepath: str) -> Tuple[buffer.BufferCollection, str]:
+    """
+    Parses the input json file containing information about the buffers and the filenames of the (binary) access files.
+    :param buffer_filepath: Filepath of the JSON file
+    :return: Tuple:
+                1. BufferCollection with all the information about the buffers (except access information)
+                2. List of filepaths of access files.
+    """
     buffers = {}
     print("Parsing input file and initializing buffers...")
 
@@ -23,7 +31,10 @@ def init_buffers(buffer_filepath: str) -> buffer.BufferCollection:
         b = buffer.Buffer(details=bufferdetails)
         buffers[identifier] = b
 
-    return buffers
+    # read list of file names containing the (binary) access information
+    access_files = content["access_files"]
+
+    return buffers, access_files
 
 
 def process_accesses(buffers: buffer.BufferCollection, access_filepath: str, ti: time_information.TimeInformation):
