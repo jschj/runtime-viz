@@ -17,20 +17,22 @@ if __name__ == '__main__':
                         metavar="filepath",
                         help="Filepath to buffers.json",
                         type=str)
-    parser.add_argument("-s", "--access-file-regex",
+    parser.add_argument("-a", "--access-file-regex",
                         default=".*", type=str,
                         required=False,
                         dest="access_file_regex",
                         metavar="regex",
                         help="Only access files with a name matching this regex will be considered.")
     parser.add_argument("-p", "--buffer-positive-regex",
-                        default=".*", type=str,
+                        default=".*",
+                        type=str,
                         required=False,
                         dest="buffer_positive_regex",
                         metavar="regex",
                         help="Only buffers with a name matching this regex will be visualized.")
     parser.add_argument("-n", "--buffer-negative-regex",
-                        default=".*", type=str,
+                        default="(?!x)x",  # guaranteed never to many anything
+                        type=str,
                         required=False,
                         dest="buffer_negative_regex",
                         metavar="regex",
