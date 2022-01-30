@@ -1,10 +1,12 @@
 import math
+from typing import Dict
 
 import matplotlib as mpl
 import numpy as np
 
 import buffer
 import heatmap
+from color_legend import ColorLegend
 from time_information import TimeInformation
 
 
@@ -14,34 +16,76 @@ class Visualization:
         self.histogram = histogram
         self.ti = ti
 
+        self.heatmaps: Dict[mpl.axis.Axis, heatmap.Heatmap] = {}
+
+        # these fields will be initialized in visualize()
+        self.fig: mpl.Figure = None
+        self.overview_lower_line = None
+        self.overview_upper_line = None
+        self.cmap = None
+        self.clim = None
+        self.color_legend = None
+
+    # callback function
+    # =================
+    def slider_callback(self, new_range):
+        """ Callback function when the slider is moved"""
+        for _, h in self.heatmaps.items():
+            h.update(new_range)
+
+        self.overview_lower_line.set_xdata([new_range[0], new_range[0]])
+        self.overview_upper_line.set_xdata([new_range[1], new_range[1]])
+
+        # Redraw the figure to ensure it updates
+        self.fig.canvas.draw_idle()
+
+    def key_callback(self, keypress_event: mpl.backend_bases.KeyEvent):
+        if keypress_event.key == "r":
+            self.reset_colormap()
+
+    def mouse_callback(self, mouse_event: mpl.backend_bases.MouseEvent):
+        axis = mouse_event.inaxes
+        if axis is not None and axis in self.heatmaps:
+            highest = self.heatmaps[axis].get_maximum()
+            self.apply_colormap(highest=highest)
+
+    def apply_colormap(self, highest: int):
+        # get discrete colormap
+        self.cmap = mpl.pyplot.get_cmap('copper', highest + 1)
+        self.clim = (0, highest)
+
+        # update heatmaps
+        for _, hm in self.heatmaps.items():
+            hm.im.set_cmap(cmap=self.cmap)
+            hm.im.set(clim=self.clim)
+
+        # update color legend
+        self.color_legend.update_legend(cmap=self.cmap, clim=self.clim)
+
+        self.fig.canvas.draw_idle()
+
+    def reset_colormap(self):
+        # determine maximum of highest heatmap entry over all heatmaps
+        highest = max([hm.get_maximum() for _, hm in self.heatmaps.items()])
+
+        self.apply_colormap(highest=highest)
+
     def visualize(self):
         # calculate size of output plots
         columns = 2
         rows = math.ceil(len(self.buffers) / 2) + 1
 
         # Create subplots
-        fig, axs = mpl.pyplot.subplots(rows, columns)
-        fig.canvas.manager.set_window_title("PMPP Memory Access Visualization")
+        self.fig, axs = mpl.pyplot.subplots(rows, columns)
+        self.fig.canvas.manager.set_window_title("PMPP Memory Access Visualization")
         mpl.pyplot.subplots_adjust(hspace=0.4, bottom=0.3)
 
         # plot heatmaps for all buffers
-        heatmaps = []
-        i = 0
-
         # largest entry in any heatmap (to determine colormap)
+        i = 0
         for i, (_, b) in enumerate(self.buffers.items()):
             axis = mpl.pyplot.subplot(rows, columns, i + 1)
-            heatmaps.append(heatmap.Heatmap(b, axis))
-
-        highest = max([hm.get_maximum() for hm in heatmaps])
-
-        # get discrete colormap
-        cmap = mpl.pyplot.get_cmap('copper', highest)
-
-        # apply colormap
-        for hm in heatmaps:
-            hm.im.set_cmap(cmap=cmap)
-            hm.im.set(clim=(0, highest))
+            self.heatmaps[axis] = heatmap.Heatmap(b, axis)
 
         # hide unused plots
         i = i + 1
@@ -66,37 +110,19 @@ class Visualization:
         slider.valtext.set_visible(False)
 
         # Create limit lintes
-        lower_limit_line = overview.axvline(slider.val[0], color='k')
-        upper_limit_line = overview.axvline(slider.val[1], color='k')
+        self.overview_lower_line = overview.axvline(slider.val[0], color='k')
+        self.overview_upper_line = overview.axvline(slider.val[1], color='k')
 
         # create color legend
-        cbar = mpl.pyplot.colorbar(mappable=mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(0, highest), cmap=cmap),
-                                   ax=overview,
-                                   orientation="horizontal",
-                                   location="top",
-                                   pad=0.5,
-                                   label="Color legend"
-                                   )
+        self.color_legend = ColorLegend(axis=overview)
 
-        number_of_ticks = min(4, highest)
-        ticks = np.linspace(0, highest, num=int(number_of_ticks), endpoint=True)
-        tick_locs = (ticks + 0.0)
-        cbar.set_ticks(tick_locs)
-        cbar.set_ticklabels([int(x) for x in ticks])
+        # initialize colormap
+        self.reset_colormap()
 
-        def update(val):
-            """ Callback function when the slider is moved"""
-            for h in heatmaps:
-                h.update(val)
-
-            lower_limit_line.set_xdata([val[0], val[0]])
-            upper_limit_line.set_xdata([val[1], val[1]])
-
-            # Redraw the figure to ensure it updates
-            fig.canvas.draw_idle()
-
-        # register callback
-        slider.on_changed(update)
+        # register callbacks
+        slider.on_changed(lambda val: self.slider_callback(val))
+        self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_callback(keypress_event=event))
+        self.fig.canvas.mpl_connect('button_press_event', lambda event: self.mouse_callback(mouse_event=event))
 
         # show plot window
         mpl.pyplot.show()
