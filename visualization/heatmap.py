@@ -35,7 +35,7 @@ class Heatmap:
 
         img = self.calc_frame(timerange=(self.buffer.ti.start_time, self.buffer.ti.end_time))
 
-        self.im = ax.imshow(img, vmin=0)
+        self.im = ax.imshow(img, vmin=0, interpolation='none')
 
         # cosmetics
         ax.set_title(f"{b.name} ({self.buffer.height}x{self.buffer.width}, {self.buffer.type_name})")
