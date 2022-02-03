@@ -48,7 +48,7 @@ class Buffer:
 
         # create buffer for heatmap frames
         self.ti = ti
-        self.heatmap_frames = np.zeros(shape=(ti.timestep_count + 1, self.hm_width, self.hm_height))
+        self.heatmap_frames = np.zeros(shape=(ti.timestep_count, self.hm_width, self.hm_height))
 
     def add_access(self, timeframe_index: int, index: int):
         self.has_access = True

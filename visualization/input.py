@@ -1,4 +1,5 @@
 import json
+import math
 import os.path
 import struct
 import zlib
@@ -43,6 +44,7 @@ def process_accesses(buffers: buffer.BufferCollection,
                      ti: time_information.TimeInformation,
                      histogram: np.ndarray):
     """
+    :param histogram:
     :param buffers: BufferCollection with buffers. This function will register accesses to the corresponding buffer.
     :param access_filepath: Filepath to zlib-compressed binary file containing access information.
     :param ti: Time Info
@@ -66,7 +68,7 @@ def process_accesses(buffers: buffer.BufferCollection,
             for bufferid, timestamp, index in struct.iter_unpack("<BQL", decompressed_data):
                 # calculate frame index (time domain)
                 relative_tp = timestamp - ti.start_time
-                frame_index = relative_tp // ti.timestep_size
+                frame_index = math.floor(relative_tp / ti.timestep_size)
 
                 # update histogram
                 histogram[frame_index] += 1

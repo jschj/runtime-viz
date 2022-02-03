@@ -3,6 +3,8 @@ import numpy as np
 
 
 class ColorLegend:
+    MAXIMUM_TICKS = 4
+
     def __init__(self, axis):
         self.axis = axis
         self.cbar = mpl.pyplot.colorbar(
@@ -16,15 +18,19 @@ class ColorLegend:
 
     def update_legend(self, cmap, clim):
         _, highest = clim
+        number_of_colors = int(highest) + 1
 
         # apply new colormap
-        self.cbar.update_normal(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(0, highest + 1, clip=False), cmap=cmap))
+        self.cbar.update_normal(
+            mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(0, number_of_colors, clip=True), cmap=cmap))
 
         # draw ticks and numbers
-        number_of_ticks = max(2, min(4, highest))
-        ticks = np.linspace(0, highest + 1, num=int(number_of_ticks), endpoint=False)
-        if ticks[number_of_ticks - 1] != highest:
-            ticks = np.append(ticks, highest)
-        tick_locs = (ticks + 0.0)
+        ticks = np.linspace(0, highest, num=number_of_colors, endpoint=True)
+
+        # reduce the number of ticks
+        while ticks.size > ColorLegend.MAXIMUM_TICKS:
+            ticks = np.delete(ticks, np.arange(1, ticks.size - 1, 2))
+
+        tick_locs = (ticks + 0.5)  # shift ticks to the middle of the color
         self.cbar.set_ticks(tick_locs)
         self.cbar.set_ticklabels([int(x) for x in ticks])

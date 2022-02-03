@@ -31,7 +31,7 @@ if __name__ == '__main__':
                         metavar="regex",
                         help="Only buffers with a name matching this regex will be visualized.")
     parser.add_argument("-n", "--buffer-negative-regex",
-                        default="(?!x)x",  # guaranteed never to many anything
+                        default="(?!x)x",  # guaranteed never to match anything
                         type=str,
                         required=False,
                         dest="buffer_negative_regex",
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         b.initialize_heatmap(ti)
 
     # initialize histogram
-    histogram = np.zeros(shape=(ti.timestep_count + 1,))
+    histogram = np.zeros(shape=(ti.timestep_count,))
 
     # read access files ("xy.accesses.bin") which match regex
     for filename in access_filepaths:

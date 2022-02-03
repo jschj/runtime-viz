@@ -50,7 +50,7 @@ class Visualization:
             self.apply_colormap(highest=highest)
 
     def apply_colormap(self, highest: int):
-        # get discrete colormap
+        # get a discrete colormap with highest+1 colors as we need a color for zero accesses
         self.cmap = mpl.pyplot.get_cmap('copper', highest + 1)
         self.clim = (0, highest)
 
@@ -95,7 +95,7 @@ class Visualization:
 
         # Create overview plot that ranges over all columns
         overview = mpl.pyplot.subplot(rows, 1, rows)
-        mpl.pyplot.plot(np.arange(self.ti.start_time, self.ti.end_time, self.ti.timestep_size), self.histogram)
+        mpl.pyplot.bar(self.ti.get_timesteps(), self.histogram, width=self.ti.timestep_size)
         mpl.pyplot.xlim(self.ti.start_time - self.ti.duration // 20, self.ti.end_time + self.ti.duration // 20)
         mpl.pyplot.title("Access histogram")
         mpl.pyplot.xlabel("Time (ns)")

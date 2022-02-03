@@ -1,3 +1,4 @@
+import math
 from typing import Tuple
 
 import matplotlib.pyplot as plt
@@ -16,7 +17,9 @@ class Heatmap:
         :param ax: matplotlib axis to display the heatmap on
         """
         self.buffer = b
-        self.prefix_sums = self.buffer.heatmap_frames
+
+        # add a frame with only zeros in order to visualize first time step as well
+        self.prefix_sums = np.append(np.zeros(shape=(1, b.hm_width, b.hm_height)), self.buffer.heatmap_frames, 0)
 
         # devide every heatmap entry by downsampling factor to display average access count
         # this is only relevant if downsampling is active,
@@ -63,8 +66,8 @@ class Heatmap:
         b = b - self.buffer.ti.start_time
 
         # map timepoints to corresponding timestep (might not be necessary)
-        a = a // self.buffer.ti.timestep_size
-        b = b // self.buffer.ti.timestep_size
+        a = math.floor(a / self.buffer.ti.timestep_size)
+        b = math.floor(b / self.buffer.ti.timestep_size)
 
         diff = self.prefix_sums[b] - self.prefix_sums[a]
         return diff
@@ -74,4 +77,4 @@ class Heatmap:
         self.im.set_data(self.calc_frame(timerange=timerange))
 
     def get_maximum(self):
-        return np.max(self.prefix_sums)
+        return np.ceil(np.max(self.prefix_sums))
