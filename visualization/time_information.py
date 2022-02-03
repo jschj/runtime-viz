@@ -9,10 +9,11 @@ class TimeInformation:
     def __init__(self, start_time, end_time):
         self.start_time = start_time
         self.end_time = end_time
-        self.duration = self.end_time - self.start_time
+        self.duration = end_time - self.start_time
 
         self.timestep_size = max(self.duration // TIME_RES, 1)
         self.timestep_count = math.floor(self.duration / self.timestep_size + 1.0)
+        self.end_time = self.start_time + self.timestep_count * self.timestep_size
 
         print(f"Time information: start: {self.start_time} "
               f"end: {self.end_time}, "
