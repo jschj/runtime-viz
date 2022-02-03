@@ -8,6 +8,7 @@ import buffer
 import heatmap
 from color_legend import ColorLegend
 from time_information import TimeInformation
+import help_text
 
 
 class Visualization:
@@ -52,6 +53,7 @@ class Visualization:
     def apply_colormap(self, highest: int):
         # get a discrete colormap with highest+1 colors as we need a color for zero accesses
         self.cmap = mpl.pyplot.get_cmap('copper', highest + 1)
+        self.cmap.set_extremes(bad="magenta", under="blue", over="lime")
         self.clim = (0, highest)
 
         # update heatmaps
@@ -123,6 +125,8 @@ class Visualization:
         slider.on_changed(lambda val: self.slider_callback(val))
         self.fig.canvas.mpl_connect('key_press_event', lambda event: self.key_callback(keypress_event=event))
         self.fig.canvas.mpl_connect('button_press_event', lambda event: self.mouse_callback(mouse_event=event))
+
+        help_text.print_help_text()
 
         # show plot window
         mpl.pyplot.show()

@@ -22,21 +22,24 @@ if __name__ == '__main__':
                         required=False,
                         dest="access_file_regex",
                         metavar="regex",
-                        help="Only access files with a name matching this regex will be considered.")
+                        help="Only access files with a name matching this regular expression will be considered. "
+                             "Example: -a \".*gmem_kernel.*\"")
     parser.add_argument("-p", "--buffer-positive-regex",
                         default=".*",
                         type=str,
                         required=False,
                         dest="buffer_positive_regex",
                         metavar="regex",
-                        help="Only buffers with a name matching this regex will be visualized.")
+                        help="Only buffers with a name matching this regular expression will be visualized. "
+                             "Example: -p \"vector01|vector02\"")
     parser.add_argument("-n", "--buffer-negative-regex",
                         default="(?!x)x",  # guaranteed never to match anything
                         type=str,
                         required=False,
                         dest="buffer_negative_regex",
                         metavar="regex",
-                        help="Buffers with a name matching this regex will *not* be visualized.")
+                        help="Buffers with a name matching this regular expression will *not* be visualized. "
+                             "Example: -n \"vector03|vector04\"")
 
     args = parser.parse_args()
 
