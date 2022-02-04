@@ -8,7 +8,7 @@ def print_help_text():
           "You can adapt the colormap to any buffer by simply clicking on the accourding heatmap.\n"
           "Please note that this might invalidate the other heatmaps as the the colormap might"
           "not cover their range of access counts.\n"
-          "Invalid access counts are then shown as in green. "
+          "Invalid access counts are then shown (i.e. too high for current colormap) in green. "
           "Press \"r\" on your keyboard to reset the colormap."
           "\n"
           "The \"Access histogram\" provides an overview of the total number of accesses over time.\n"
