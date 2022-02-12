@@ -1,127 +1,93 @@
-import math
+import argparse
 import os
-import sys
+import re
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
-from matplotlib.widgets import RangeSlider
 
-import heatmap
 import input
 import time_information
+import visualization
 
 if __name__ == '__main__':
-    start_wclock = time.time()  # for performance measurement
-    if len(sys.argv) != 3:
-        print(f"Usage: {os.path.basename(__file__)} <buffer file> <access file>")
-        exit(255)
+    parser = argparse.ArgumentParser(description='Interactive visualiazation of CUDA memory accesses in GPU global '
+                                                 'memory. ')
 
-    buffer_filepath = sys.argv[1]
-    access_filepath = sys.argv[2]
+    parser.add_argument("filepath",
+                        metavar="filepath",
+                        help="Filepath to buffers.json",
+                        type=str)
+    parser.add_argument("-a", "--access-file-regex",
+                        default=".*", type=str,
+                        required=False,
+                        dest="access_file_regex",
+                        metavar="regex",
+                        help="Only access files with a name matching this regular expression will be considered. "
+                             "Example: -a \".*gmem_kernel.*\"")
+    parser.add_argument("-p", "--buffer-positive-regex",
+                        default=".*",
+                        type=str,
+                        required=False,
+                        dest="buffer_positive_regex",
+                        metavar="regex",
+                        help="Only buffers with a name matching this regular expression will be visualized. "
+                             "Example: -p \"vector01|vector02\"")
+    parser.add_argument("-n", "--buffer-negative-regex",
+                        default="(?!x)x",  # guaranteed never to match anything
+                        type=str,
+                        required=False,
+                        dest="buffer_negative_regex",
+                        metavar="regex",
+                        help="Buffers with a name matching this regular expression will *not* be visualized. "
+                             "Example: -n \"vector03|vector04\"")
 
-    # read input
-    buffers = input.init_buffers(buffer_filepath)
+    args = parser.parse_args()
+
+    # for performance measurement
+    start_wclock = time.time()
+
+    # read buffers.json and init time infromation and heatmaps
+    buffers, access_filepaths = input.init_buffers_file(args.filepath)
     earliest_access_time = min([b.first_access_time for _, b in buffers.items()])
     latest_access_time = max([b.last_access_time for _, b in buffers.items()])
     ti = time_information.TimeInformation(earliest_access_time, latest_access_time)
     for _, b in buffers.items():
         b.initialize_heatmap(ti)
-    histogram = input.process_accesses(buffers, access_filepath, ti)
 
-    # calculate size of output plots
-    columns = 2
-    rows = math.ceil(len(buffers) / 2) + 1
+    # initialize histogram
+    histogram = np.zeros(shape=(ti.timestep_count,))
 
-    # Create subplots
-    fig, axs = plt.subplots(rows, columns)
-    fig.canvas.manager.set_window_title("PMPP Memory Access Visualization")
-    plt.subplots_adjust(hspace=0.4, bottom=0.3)
+    # read access files ("xy.accesses.bin") which match regex
+    for filename in access_filepaths:
+        if re.fullmatch(args.access_file_regex, filename) is not None:
+            input.process_accesses(buffers=buffers,
+                                   access_filepath=os.path.join(os.path.dirname(args.filepath), filename),
+                                   ti=ti,
+                                   histogram=histogram)
+        else:
+            print(
+                f"Ignoring access information file {filename}, because its name does not match the access file regex.")
 
-    # plot heatmaps for all buffers
-    heatmaps = []
-    i = 0
+    # filter buffers
+    for key, b in list(buffers.items()):
+        if re.fullmatch(args.buffer_positive_regex, b.name) is None:
+            print(f"Buffer {b.name} is not visualized, because its named does not match the buffer positive regex.")
+            del buffers[key]
 
-    # largest entry in any heatmap (to determine colormap)
-    for i, (_, b) in enumerate(buffers.items()):
-        axis = plt.subplot(rows, columns, i + 1)
-        heatmaps.append(heatmap.Heatmap(b, axis))
+        elif re.fullmatch(args.buffer_negative_regex, b.name) is not None:
+            print(f"Buffer {b.name} is not visualized, because its named does match the buffer negative regex.")
+            del buffers[key]
 
-    highest = max([hm.get_maximum() for hm in heatmaps])
+        elif not b.has_access:
+            print(f"Buffer {b.name} is not visualized, because it contains no accesses.")
+            del buffers[key]
 
-    # get discrete colormap
-    cmap = plt.get_cmap('copper', highest)
+    if len(buffers) == 0:
+        print("There are no buffers to visualize :/")
+        exit(1)
 
-    # apply colormap
-    for hm in heatmaps:
-        hm.im.set_cmap(cmap=cmap)
-        hm.im.set(clim=(0, highest))
-
+    # print setup timing
     print(f"Setup took {time.time() - start_wclock:.2f} seconds. Showing visualization window...")
 
-    # hide unused plots
-    i = i + 1
-    while i < (rows - 1) * columns:
-        plt.subplot(rows, columns, i + 1).set_axis_off()
-        i = i + 1
-
-    # Create overview plot that ranges over all columns
-    overview = plt.subplot(rows, 1, rows)
-    end = ti.end_time
-    if ti.duration % ti.timestep_size == 0:
-        end = end + ti.timestep_size
-    plt.plot(np.arange(ti.start_time, end, ti.timestep_size), histogram)
-    plt.xlim(ti.start_time - ti.duration // 20, ti.end_time + ti.duration // 20)
-    plt.title("Access histogram")
-    plt.xlabel("Time (ns)")
-
-    # Create the RangeSlider
-    slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
-    slider = RangeSlider(slider_ax, "Time selection",
-                         valmin=ti.start_time,
-                         valmax=ti.end_time,
-                         valstep=ti.timestep_size,
-                         valinit=(ti.start_time, ti.end_time))
-    slider.valtext.set_visible(False)
-
-    # Create limit lintes
-    lower_limit_line = overview.axvline(slider.val[0], color='k')
-    upper_limit_line = overview.axvline(slider.val[1], color='k')
-
-    # create color legend
-    cbar = plt.colorbar(mappable=ScalarMappable(norm=Normalize(0, highest), cmap=cmap),
-                        ax=overview,
-                        orientation="horizontal",
-                        location="top",
-                        pad=0.5,
-                        label="Color legend"
-                        )
-
-    number_of_ticks = min(4, highest)
-    ticks = np.linspace(0, highest, num=int(number_of_ticks), endpoint=True)
-    tick_locs = (ticks + 0.0)
-    cbar.set_ticks(tick_locs)
-    cbar.set_ticklabels([int(x) for x in ticks])
-
-
-    def update(val):
-        """ Callback function when the slider is moved"""
-        for h in heatmaps:
-            h.update(val)
-
-        lower_limit_line.set_xdata([val[0], val[0]])
-        upper_limit_line.set_xdata([val[1], val[1]])
-
-        # Redraw the figure to ensure it updates
-        fig.canvas.draw_idle()
-
-
-    # register callback
-    slider.on_changed(update)
-
-    # show plot window
-    plt.show()
-
-    print("Goodbye!")
+    vis = visualization.Visualization(buffers, histogram, ti)
+    vis.visualize()

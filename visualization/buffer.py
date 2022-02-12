@@ -4,7 +4,7 @@ import time_information
 
 
 class Buffer:
-    MAX_RES = 100
+    MAX_RES = 50
 
     def __init__(self, details: dict):
         """ Initialize buffer using detail information from JSON """
@@ -15,6 +15,7 @@ class Buffer:
         self.dimensionality = details["type"].lower()
         self.first_access_time = details["first_access_time"]
         self.last_access_time = details["last_access_time"]
+        self.has_access = False
 
         if self.dimensionality == "pitched":
             self.width = details['width']
@@ -47,9 +48,11 @@ class Buffer:
 
         # create buffer for heatmap frames
         self.ti = ti
-        self.heatmap_frames = np.zeros(shape=(ti.timestep_count + 1, self.hm_width, self.hm_height))
+        self.heatmap_frames = np.zeros(shape=(ti.timestep_count, self.hm_width, self.hm_height))
 
     def add_access(self, timeframe_index: int, index: int):
+        self.has_access = True
+
         # convert 1D index to coordinates (pitch is considered in tracking code)
         x_index = index % self.width
         y_index = index // self.width
