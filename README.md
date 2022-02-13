@@ -18,7 +18,7 @@ Executing this will generate a bunch of `*.accesses.bin` files and a `buffers.js
 
 ## Compiling
 
-Dependencies for the _Runtime-Viz_ are [zlib](https://github.com/madler/zlib.git) and [jsoncons](https://github.com/danielaparker/jsoncons.git). Both are included as submodules. Of course you will also need the _CUDA_ compiler and libraries. For visualization you will need _numpy_, _matplotlib_ and _tqdm_. They can be installed with `pip install -r visualization/requirements.txt`.
+Dependencies for the _Runtime-Viz_ are [zlib](https://github.com/madler/zlib.git) and [jsoncons](https://github.com/danielaparker/jsoncons.git). Both are included as submodules. Of course you will also need the _CUDA_ compiler and libraries. _CMake_ is used as the build system. For visualization you will need Python 3.x along with the python packages _numpy_ and _matplotlib_. They can be installed with `pip install -r visualization/requirements.txt`.
 
 First make sure that the submodules _jsoncons_ and _zlib_ are pulled. Then build _zlib_ by executing `make zlib` in the root directory. Next build _memtrack_ and _mem_trace_ by executing:
 
