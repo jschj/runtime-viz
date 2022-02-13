@@ -18,7 +18,7 @@ namespace memtrack
         non compiling jsoncons sources in nvcc. ;)
      */
 
-    void cu_memtrack_init(const std::string& json_file_path, const std::string& access_dump_file);
+    void cu_memtrack_init(const std::string& json_file_path);
     void cu_memtrack_malloc(nvbit_api_cuda_t cbid, void *params);
     void cu_memtrack_free(nvbit_api_cuda_t cbid, void *params);
     void cu_memtrack_access(const mem_access_t& access);

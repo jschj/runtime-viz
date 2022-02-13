@@ -21,7 +21,7 @@ namespace memtrack
     std::shared_ptr<access_compression> acc_comp;
 
 
-    void cu_memtrack_init(const std::string& json_file_path, const std::string& access_dump_file)
+    void cu_memtrack_init(const std::string& json_file_path)
     {
         json_path = json_file_path;
         acc_comp = std::make_shared<access_compression>();
